@@ -1,10 +1,14 @@
 import { StyleSheet, Text, View } from "react-native";
-import Button from "../components/atoms/Button/Button";
+import DashOrderCard from "../components/molecules/DashOrderCard";
 
 export default function Page() {
   return (
     <View style={styles.container}>
-      <Button title="Ver pedidos" variant="secondary"></Button>
+      <DashOrderCard 
+        title="Cacau Expresso" 
+        ordersQuantity={99} 
+        ordersStatus="PENDENTE" 
+      />
     </View>
   );
 }

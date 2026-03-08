@@ -14,9 +14,11 @@ export const buttonStyles = (size) => StyleSheet.create({
         borderColor: "#A47032",
         borderStyle: "solid",
         borderRadius: 12,
-        marginTop: 16,
         paddingHorizontal: 6,
-        paddingVertical: 4
+        paddingVertical: 4,
+        width: size == "small" ? 80 : 120,
+        alignItems: "center",
+        justifyContent: "center",
     },
     secondaryPressed: {
         backgroundColor: "transparent",
