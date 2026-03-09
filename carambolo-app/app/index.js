@@ -1,13 +1,13 @@
 import { StyleSheet, Text, View } from "react-native";
+import OrderCard from "../components/molecules/OrderCard/OrderCard";
+import KanbanColumn from "../components/organisms/KanbanColumn/KanbanColumn";
+import SideMenu from "../components/organisms/SideMenu/SideMenu";
 
 export default function Page() {
   return (
-    <View style={styles.container}>
-      <View style={styles.main}>
-        <Text style={styles.title}>Hello World</Text>
-        <Text style={styles.subtitle}>This is the first page of your app.</Text>
-      </View>
-    </View>
+
+    <SideMenu/>
+
   );
 }
 
