@@ -1,13 +1,11 @@
 import { StyleSheet, Text, View } from "react-native";
-import DashOrderCard from "../components/molecules/DashOrderCard";
+import DashOrderContainer from "../components/organisms/DashOrderContainer/DashOrderContainer";
 
 export default function Page() {
   return (
     <View style={styles.container}>
-      <DashOrderCard 
-        title="Cacau Expresso" 
-        ordersQuantity={99} 
-        ordersStatus="PENDENTE" 
+      <DashOrderContainer 
+        title="Massas - Pedidos Pendentes"
       />
     </View>
   );

@@ -1,6 +1,6 @@
 import { Text, View } from "react-native"
-import { styles } from "./DashOrderCard/DashOrderCard.styles"
-import Button from "../atoms/Button/Button"
+import { styles } from "./DashOrderCard.styles"
+import Button from "../../atoms/Button/Button"
 
 const DashOrderCard = ({ title, ordersQuantity, ordersStatus }) => {
     const getLabelByStatus = (status) => {
