@@ -4,8 +4,8 @@ const styles = StyleSheet.create({
 
     sideMenuButton: {
         backgroundColor: "#103464",
-        width: "6%",
-        height: "8%",
+        width: 20,
+        height: 60,
 
         borderWidth: 1,
         borderStyle: "solid",
@@ -27,7 +27,7 @@ const styles = StyleSheet.create({
 
         paddingBottom: 5,
     }
-    
+
 })
 
 export default styles;

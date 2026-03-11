@@ -5,11 +5,11 @@ import OrderCard from "../../molecules/OrderCard/OrderCard"
 
 const KanbanColumn = ({ orders, title }) => {
     return (
-        <View style={{ width: 340, height: "80%"}}>
+        <View style={{ width: 280, height: "80%"}}>
 
             <View style={styles.category}>
                 <Text style={styles.categoryText}>
-                    Pedidos {title}
+                    {title}
                 </Text>
             </View>
 

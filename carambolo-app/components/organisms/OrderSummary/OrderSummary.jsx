@@ -1,13 +1,26 @@
-import { Text, View } from "react-native"
+import { Pressable, ScrollView, Text, View } from "react-native"
 import styles from "./OrderSummary.styles"
 
-const OrderSummary = (onClick) => {
+const OrderSummary = ({ onClose }) => {
 
     return (
 
-        <View>
+        <View style={{ backgroundColor: "rgba(0, 0, 0, 0.75)", paddingTop: 100, flex: 1 }}>
+
+            <Pressable
+                style={{
+                    position: "absolute",
+                    width: "100%",
+                    height: "100%"
+                }}
+                onPress={onClose}
+            />
 
             <View style={styles.header}>
+
+                <Pressable onPress={onClose} style={{backgroundColor: "#A47032", width: 100, height: 5, borderRadius: 25}} >
+                    {/* <Text style={{ color: "white", textAlign: "center" }}>Fechar</Text> */}
+                </Pressable>
 
                 <Text style={styles.headerTitle}>Número do Pedido: 9999999</Text>
 
@@ -15,7 +28,7 @@ const OrderSummary = (onClick) => {
 
             </View>
 
-            <View style={styles.body}>
+            <ScrollView style={styles.body} contentContainerStyle={{ paddingBottom: 50 }}>
 
                 <View>
 
@@ -28,7 +41,7 @@ const OrderSummary = (onClick) => {
 
                         <Text style={styles.label}>Massa: <Text style={styles.data}>Red-Velvet</Text></Text>
 
-                        <Text style={[styles.label, {width: "40%"}]}>Recheio: <Text style={styles.data}>Brigadeiro de Pistache com Redução de Frutas Vermelhas</Text></Text>
+                        <Text style={[styles.label, { width: "40%" }]}>Recheio: <Text style={styles.data}>Brigadeiro de Pistache com Redução de Frutas Vermelhas</Text></Text>
                     </View>
 
                 </View>
@@ -40,9 +53,9 @@ const OrderSummary = (onClick) => {
                     <View>
                         <Text style={styles.data}>Nenhuma imagem de referência adicionada</Text>
 
-                        <Text style={styles.label}>Observações</Text>
+                        <Text style={[styles.label, { paddingTop: 20 }]}>Observações</Text>
 
-                        <Text style={styles.data}>Redondo</Text>
+                        <Text style={styles.data}>Sem lactose</Text>
 
                     </View>
 
@@ -62,7 +75,7 @@ const OrderSummary = (onClick) => {
 
                     <Text style={styles.title}>Dados da Entrega</Text>
 
-                    <View>
+                    <View style={{ flexDirection: "row", gap: 20, flexWrap: "wrap" }}>
 
                         <Text style={styles.label}>O pedido será: <Text style={styles.data}>Entrega</Text></Text>
 
@@ -73,36 +86,65 @@ const OrderSummary = (onClick) => {
                     <View>
 
                         <Text style={styles.subtitle}>Dados do Solicitante</Text>
-                        
-                        <Text style={styles.label}>Nome do solicitante: <Text style={styles.data}>Murilo Do Nascimento Barros</Text></Text>
 
-                        <Text style={styles.label}>Telefone: <Text style={styles.data}> (11) 99999-9999</Text></Text>
+                        <View style={{ gap: 10 }}>
+
+                            <Text style={styles.label}>Nome do solicitante: <Text style={styles.data}>Murilo Do Nascimento Barros</Text></Text>
+
+                            <Text style={styles.label}>Telefone: <Text style={styles.data}> (11) 99999-9999</Text></Text>
+
+                        </View>
 
                     </View>
 
                     <View>
 
                         <Text style={styles.subtitle}>Endereço</Text>
-                        
-                        <Text style={styles.label}>CEP: <Text style={styles.data}>01234-567</Text></Text>
 
-                        <Text style={styles.label}>Estado: <Text style={styles.data}>SP</Text></Text>
+                        <View style={{ flexDirection: "row", gap: 30, flexWrap: "wrap", width: "80%" }}>
 
-                        <Text style={styles.label}>Cidade: <Text style={styles.data}>São Paulo</Text></Text>
+                            <View>
+                                <Text style={styles.label}>CEP</Text>
+                                <Text style={styles.data}>01234-567</Text>
+                            </View>
 
-                        <Text style={styles.label}>Bairro: <Text style={styles.data}>Jardim Silva</Text></Text>
+                            <View>
+                                <Text style={styles.label}>Estado</Text>
+                                <Text style={styles.data}>SP</Text>
+                            </View>
 
-                        <Text style={styles.label}>Rua: <Text style={styles.data}>Rua Antônio Marques da Silva</Text></Text>
+                            <View>
+                                <Text style={styles.label}>Cidade</Text>
+                                <Text style={styles.data}>São Paulo</Text>
+                            </View>
 
-                        <Text style={styles.label}>Número: <Text style={styles.data}>123</Text></Text>
+                            <View>
+                                <Text style={styles.label}>Bairro</Text>
+                                <Text style={styles.data}>Jardim Silva</Text>
+                            </View>
 
-                        <Text style={styles.label}>Complemento: <Text style={styles.data}>Apto 101</Text></Text>
+                            <View>
+                                <Text style={styles.label}>Rua</Text>
+                                <Text style={[styles.data, { width: "70%" }]}>Rua Antônio Marques Silva</Text>
+                            </View>
+
+                            <View>
+                                <Text style={styles.label}>Número</Text>
+                                <Text style={styles.data}>123</Text>
+                            </View>
+
+                            <View>
+                                <Text style={styles.label}>Complemento</Text>
+                                <Text style={styles.data}>Apto 101</Text>
+                            </View>
+
+                        </View>
 
                     </View>
 
                 </View>
 
-            </View>
+            </ScrollView>
 
         </View>
 
