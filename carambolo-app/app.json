@@ -2,6 +2,7 @@
   "expo": {
     "name": "carambolo-app",
     "slug": "carambolo-app",
+    "scheme": "carambolo",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
