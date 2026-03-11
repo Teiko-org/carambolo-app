@@ -1,19 +1,14 @@
-import { StyleSheet, Text, View } from "react-native";
-import DashOrderContainer from "../components/organisms/DashOrderContainer/DashOrderContainer";
-import { ClipboardList } from "lucide-react-native";
-import MonthlyOrdersChart from "../components/organisms/MonthlyOrdersChart/MonthlyOrdersChart";
-import OrderCard from "../components/molecules/OrderCard/OrderCard";
-import KanbanColumn from "../components/organisms/KanbanColumn/KanbanColumn";
-import SideMenu from "../components/organisms/SideMenu/SideMenu";
-import OrderKanban from "../components/pages/OrderKanban";
-
+import { StatusBar, StyleSheet, Text, View } from "react-native";
+import MonthlyOrdersChart from "../components/molecules/MonthlyOrdersChart/MonthlyOrdersChart";
+import DashChartContainer from "../components/organisms/DashChartContainer/DashChartContainer";
 
 export default function Page() {
 
   return (
-
-    <OrderKanban/>
-
+    <View style={styles.container}>
+      <StatusBar style="auto" />
+      <DashChartContainer />
+    </View>
   );
 }
 
@@ -21,6 +16,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 14,
+    backgroundColor: "#FFEEE7",
+    // overflow: "hidden",
   },
   main: {
     flex: 1,

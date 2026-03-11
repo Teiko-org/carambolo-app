@@ -1,38 +1,39 @@
 import { Text, View } from 'react-native';
 import { BarChart } from 'react-native-gifted-charts';
+import styles from './MonthlyOrdersChart.styles';
 
 const MonthlyOrdersChart = () => {
   const data = [
     { 
-      value: 45, 
+      value: 45,
       label: 'Jan', 
       frontColor: '#103464',
       topLabelComponent: () => (
-        <Text style={{color: '#000000', fontSize: 18, marginBottom: 6}}>Cacau Expresso</Text>
+        <Text>Cacau Expresso</Text>
       ),
     },
     { 
-      value: 45, 
+      value: 36, 
       label: 'Fev', 
       frontColor: '#A47032',
       topLabelComponent: () => (
-        <Text style={{color: '#000000', fontSize: 18, marginBottom: 6}}>Cacau Expresso</Text>
+        <Text>Cacau Expresso</Text>
       ),
     },
     { 
-      value: 45, 
+      value: 48, 
       label: 'Mar', 
       frontColor: '#103464',
       topLabelComponent: () => (
-        <Text style={{color: '#000000', fontSize: 18, marginBottom: 6}}>Cacau Expresso</Text>
+        <Text>Cacau Expresso</Text>
       ),
     },
     { 
-      value: 45, 
+      value: 42, 
       label: 'Abr', 
       frontColor: '#A47032',
       topLabelComponent: () => (
-        <Text style={{color: '#000000', fontSize: 18, marginBottom: 6}}>Cacau Expresso</Text>
+        <Text>Cacau Expresso</Text>
       ),
     },
     { 
@@ -40,80 +41,80 @@ const MonthlyOrdersChart = () => {
       label: 'Mai', 
       frontColor: '#103464',
       topLabelComponent: () => (
-        <Text style={{color: '#000000', fontSize: 18, marginBottom: 6}}>Cacau Expresso</Text>
+        <Text>Cacau Expresso</Text>
       ),
     },
     { 
-      value: 45, 
+      value: 44, 
       label: 'Jun', 
       frontColor: '#A47032',
       topLabelComponent: () => (
-        <Text style={{color: '#000000', fontSize: 18, marginBottom: 6}}>Cacau Expresso</Text>
+        <Text>Cacau Expresso</Text>
       ),
     },{ 
-      value: 45, 
+      value: 58, 
       label: 'Jul', 
       frontColor: '#103464',
       topLabelComponent: () => (
-        <Text style={{color: '#000000', fontSize: 18, marginBottom: 6}}>Cacau Expresso</Text>
+        <Text>Cacau Expresso</Text>
       ),
     },
     { 
-      value: 45, 
+      value: 22, 
       label: 'Ago', 
       frontColor: '#A47032',
       topLabelComponent: () => (
-        <Text style={{color: '#000000', fontSize: 18, marginBottom: 6}}>Cacau Expresso</Text>
+        <Text>Cacau Expresso</Text>
       ),
     },{ 
       value: 45, 
       label: 'Set', 
       frontColor: '#103464',
       topLabelComponent: () => (
-        <Text style={{color: '#000000', fontSize: 14}}>Cacau Expresso</Text>
+        <Text>Cacau Expresso</Text>
       ),
     },
     { 
-      value: 45, 
+      value: 52, 
       label: 'Out', 
       frontColor: '#A47032',
       topLabelComponent: () => (
-        <Text style={{color: '#000000', fontSize: 18, marginBottom: 6}}>Cacau Expresso</Text>
+        <Text>Cacau Expresso</Text>
       ),
     },{ 
-      value: 45, 
+      value: 50, 
       label: 'Nov', 
       frontColor: '#103464',
       topLabelComponent: () => (
-        <Text style={{color: '#000000', fontSize: 18, marginBottom: 6}}>Cacau Expresso</Text>
+        <Text>Cacau Expresso</Text>
       ),
     },
     { 
       value: 45, 
-      label: 'Dec', 
+      label: 'Dez', 
       frontColor: '#A47032',
       topLabelComponent: () => (
-        <Text style={{color: '#000000', fontSize: 18, marginBottom: 6}}>Cacau Expresso</Text>
+        <Text>Cacau Expresso</Text>
       ),
     },
   ];
 
   return (
-    <View style={{
-      flex: 1
-    }}>
+    <View>
       <BarChart
         data={data}
         horizontal={true}
         barWidth={20}
-        barBorderTopRightRadius={4}
-        barBorderTopLeftRadius={4}
-        initialSpacing={0}
+        barBorderTopRightRadius={100}
+        barBorderTopLeftRadius={100}
         spacing={10}
         xAxisType="numeric"
-        width={400}
-        height={350}
-        top
+        rulesColor={""}
+        width={300}
+        height={380}
+        topLabelContainerStyle={styles.topLabelContainerStyle}
+        backgroundColor={"#FFE7DD"}
+        maxValue={90}
       />
     </View>
   );
