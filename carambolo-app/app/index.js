@@ -1,6 +1,15 @@
 import { StatusBar, StyleSheet, Text, View } from "react-native";
 import MonthlyOrdersChart from "../components/molecules/MonthlyOrdersChart/MonthlyOrdersChart";
 import DashChartContainer from "../components/organisms/DashChartContainer/DashChartContainer";
+import { StyleSheet, Text, View } from "react-native";
+import DashOrderContainer from "../components/organisms/DashOrderContainer/DashOrderContainer";
+import MonthlyOrdersChart from "../components/organisms/MonthlyOrdersChart/MonthlyOrdersChart";
+import OrderCard from "../components/molecules/OrderCard/OrderCard";
+import KanbanColumn from "../components/organisms/KanbanColumn/KanbanColumn";
+import SideMenu from "../components/organisms/SideMenu/SideMenu";
+import OrderKanban from "../components/pages/OrderKanban";
+import OrderSummary from "../components/organisms/OrderSummary/OrderSummary";
+
 
 export default function Page() {
   return (
