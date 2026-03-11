@@ -3,13 +3,13 @@ import styles from "./KanbanColumn.styles"
 import OrderCard from "../../molecules/OrderCard/OrderCard"
 
 
-const KanbanColumn = ({ orders }) => {
+const KanbanColumn = ({ orders, title }) => {
     return (
-        <View style={{ paddingTop: 100, width: "80%" }}>
+        <View style={{ width: 340, height: "80%"}}>
 
             <View style={styles.category}>
                 <Text style={styles.categoryText}>
-                    Pedidos Pagos
+                    Pedidos {title}
                 </Text>
             </View>
 

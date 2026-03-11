@@ -4,6 +4,7 @@ const styles = StyleSheet.create({
     container: {
         backgroundColor: "#FFE7DD",
         width: "100%",
+        height: "100%",
         padding: 10,
 
         borderRadius: 10,
@@ -20,6 +21,7 @@ const styles = StyleSheet.create({
 
         backgroundColor: "#103464",
         width: "100%",
+        height: "100%",
         padding: 2,
 
         borderRadius: 10,
@@ -37,7 +39,7 @@ const styles = StyleSheet.create({
 
     category: {
         backgroundColor: "#103464",
-        width: "50%",
+        width: "fit-content",
 
         borderRadius: 10,
         borderWidth: 2,
@@ -56,7 +58,9 @@ const styles = StyleSheet.create({
         color: "#A47032",
         fontSize: 18,
         fontWeight: "bold",
+
         padding: 10,
+        paddingHorizontal: 20,
     }
     
 })

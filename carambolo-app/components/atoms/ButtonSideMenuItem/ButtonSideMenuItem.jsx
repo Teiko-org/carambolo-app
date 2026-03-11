@@ -1,8 +1,8 @@
 import { Pressable, View, Text } from "react-native"
-import styles from "./ButtonSideMenu.styles"
+import styles from "./ButtonSideMenuItem.styles"
 // import { MdOutlineSpaceDashboard } from "react-icons/md";
 
-const ButtonSideMenu = ({ icon, text, selected, setSelected, exit }) => {
+const ButtonSideMenuItem = ({ icon, text, selected, setSelected, exit }) => {
 
     const handleSelect = () => {
         setSelected(text)
@@ -25,4 +25,4 @@ const ButtonSideMenu = ({ icon, text, selected, setSelected, exit }) => {
     )
 }
 
-export default ButtonSideMenu
+export default ButtonSideMenuItem
