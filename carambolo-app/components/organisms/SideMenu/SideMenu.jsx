@@ -4,13 +4,27 @@ import ButtonSideMenuItem from "../../atoms/ButtonSideMenuItem/ButtonSideMenuIte
 import { useState } from "react"
 import ButtonSideMenu from "../../atoms/ButtonSideMenu/ButtonSideMenu"
 
-const SideMenu = (onClose) => {
+const SideMenu = ({onClose}) => {
 
     const [selected, setSelected] = useState("Dashboard")
 
     return (
 
-        <View style={styles.sideMenuContainer}>
+        <View style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.6)",
+            flexDirection: "row"
+        }}>
+
+            <Pressable
+                style={{
+                    position: "absolute",
+                    width: "100%",
+                    height: "100%"
+                }}
+                onPress={onClose}
+            />
+
             <View style={styles.container}>
 
                 <View style={{ gap: 30 }}>
@@ -29,7 +43,18 @@ const SideMenu = (onClose) => {
 
             </View>
 
-            <ButtonSideMenu onClick={onClose} />
+            <View
+                style={{
+                    position: "absolute",
+                    alignSelf: "center",
+                    left: 90,
+                    right: 0,
+                    alignItems: "center",
+                    zIndex: 10
+                }}
+            >
+                <ButtonSideMenu onPress={onClose} />
+            </View>
 
         </View>
     )

@@ -19,6 +19,8 @@ const styles = StyleSheet.create({
 
         gap: 10,
 
+        position: "static",
+
     },
 
     headerTitle: {
@@ -41,7 +43,6 @@ const styles = StyleSheet.create({
 
         backgroundColor: "#FFEEE7",
         width: "100%",
-        height: "100%",
         paddingVertical: 15,
         paddingHorizontal: 20,
     },
@@ -52,12 +53,18 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: "bold",
 
+        paddingTop: 10,
+        paddingBottom: 15,
+
     },
 
     subtitle: {
         color: "#103464",
         fontSize: 16,
         fontWeight: "bold",
+
+        paddingTop: 20,
+        paddingBottom: 10,
     },
 
     label: {

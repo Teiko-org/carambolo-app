@@ -1,4 +1,4 @@
-import { Pressable, View, Text, Image, ScrollView } from "react-native"
+import { Pressable, View, Text, Image, ScrollView, Modal } from "react-native"
 import KanbanColumn from "../organisms/KanbanColumn/KanbanColumn"
 import ButtonSideMenu from "../atoms/ButtonSideMenu/ButtonSideMenu"
 import { useState } from "react"
@@ -8,23 +8,42 @@ const OrderKanban = () => {
 
     const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
 
-    // const openSideMenu = () => setIsSideMenuOpen(true);
-    // const closeSideMenu = () => setIsSideMenuOpen(false);
+    const openSideMenu = () => setIsSideMenuOpen(true);
+    const closeSideMenu = () => setIsSideMenuOpen(false);
 
     return (
         <View style={{ height: "100%", backgroundColor: "#FFEEE7" }}>
             <ScrollView horizontal={true} style={{ flex: 1 }} contentContainerStyle={{ flexDirection: "row", alignItems: "center", justifyContent: "center", height: "100%", gap: 20, paddingHorizontal: 20 }}>
-                <KanbanColumn title="Cancelados" />
-                <KanbanColumn title="Pendentes" />
-                <KanbanColumn title="Pagos" />
-                <KanbanColumn title="Concluídos" />
+                <KanbanColumn title="Pedidos Cancelados" />
+                <KanbanColumn title="Pedidos Pendentes" />
+                <KanbanColumn title="Pedidos Pagos" />
+                <KanbanColumn title="Pedidos Concluídos" />
             </ScrollView>
 
-            <ButtonSideMenu open={false} />
+            <View
+                style={{
+                    position: "absolute",
+                    left: 0,
+                    top: "50%",
+                    transform: [{ translateY: -25 }],
+                    zIndex: 10
+                }}
+            >
 
-            {isSideMenuOpen && <SideMenu open={true} />}
+                <ButtonSideMenu onPress={openSideMenu} />
 
-        </View>
+            </View>
+
+            <Modal
+                visible={isSideMenuOpen}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={closeSideMenu}
+            >
+                <SideMenu onClose={closeSideMenu} />
+            </Modal>
+
+        </View >
 
     )
 }
