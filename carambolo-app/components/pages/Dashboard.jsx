@@ -54,58 +54,61 @@ const Dashboard = () => {
                 ordersStatus: "PENDENTE"
             }
         ])
-    },[])
+    }, [])
 
     return (
-        <ScrollView contentContainerStyle={{ flex:1, gap: 40 }}>
+        <View style={{ flex: 1 }}>
+            <ScrollView contentContainerStyle={{ gap: 40, marginBottom: 20 }}>
 
-            <DashOrderContainer 
-                title="Pedidos Pendentes - Massa"
-                cards={massaOrders}
-                icon={
-                <ClipboardList size={30}/>
-            }
-            />
-            <DashOrderContainer 
-                title="Pedidos Pendentes - Recheios"
-                cards={recheiosOrders}
-                icon={
-                <ClipboardList size={30}/>
-                }
-            />
-            <DashChartContainer
-                headerText="Massas Mais Pedidas Por Mês - 2025"
-                children={<MonthlyOrdersChart />}
-                massasOptions={[
-                    {
-                        label: "Chocolate",
-                        value: "chocolate",
-                    },
-                    {
-                        label: "Baunilha",
-                        value: "baunilha",
-                    },
-                    {
-                        label: "Laranja",
-                        value: "laranja",
+                <DashOrderContainer
+                    title="Pedidos Pendentes - Massa"
+                    cards={massaOrders}
+                    icon={
+                        <ClipboardList size={30} />
                     }
-                ]}
-                anosOptions={[
-                    {
-                        label: "2025",
-                        value: "2025"
-                    },
-                    {
-                        label: "2024",
-                        value: "2024"
-                    },
-                    {
-                        label: "2023",
-                        value: "2023"
+                />
+                <DashOrderContainer
+                    title="Pedidos Pendentes - Recheios"
+                    cards={recheiosOrders}
+                    icon={
+                        <ClipboardList size={30} />
                     }
-                ]}
-            />
-        </ScrollView>
+                />
+                <DashChartContainer
+                    headerText="Massas Mais Pedidas Por Mês - 2025"
+                    children={<MonthlyOrdersChart />}
+                    massasOptions={[
+                        {
+                            label: "Chocolate",
+                            value: "chocolate",
+                        },
+                        {
+                            label: "Baunilha",
+                            value: "baunilha",
+                        },
+                        {
+                            label: "Laranja",
+                            value: "laranja",
+                        }
+                    ]}
+                    anosOptions={[
+                        {
+                            label: "2025",
+                            value: "2025"
+                        },
+                        {
+                            label: "2024",
+                            value: "2024"
+                        },
+                        {
+                            label: "2023",
+                            value: "2023"
+                        }
+                    ]}
+                />
+            </ScrollView>
+        </View>
+
     )
 }
 

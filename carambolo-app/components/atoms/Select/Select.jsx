@@ -5,10 +5,13 @@ import { Dropdown } from "react-native-element-dropdown";
 const Select = ({ defaultValue, options }) => {
     const [selectedValue, setSelectedValue] = useState(defaultValue)
 
-    useEffect(async () => {
-        await setSelectedValue(defaultValue)
-    },[])
-    
+    useEffect(() => {
+        async function handleDefaultValue() {
+            await setSelectedValue(defaultValue)
+        }
+        handleDefaultValue()
+    }, [])
+
     return (
         <Dropdown
             data={options}
