@@ -3,11 +3,41 @@ import MonthlyOrdersChart from "../components/molecules/MonthlyOrdersChart/Month
 import DashChartContainer from "../components/organisms/DashChartContainer/DashChartContainer";
 
 export default function Page() {
-
   return (
     <View style={styles.container}>
       <StatusBar style="auto" />
-      <DashChartContainer />
+      <DashChartContainer
+        headerText="Massas Mais Pedidas Por Mês - 20251"
+        children={<MonthlyOrdersChart />}
+        massasOptions={[
+          {
+            label: "Chocolate",
+            value: "chocolate",
+          },
+          {
+            label: "Baunilha",
+            value: "baunilha",
+          },
+          {
+            label: "Laranja",
+            value: "laranja",
+          }
+        ]}
+        anosOptions={[
+          {
+            label: "2025",
+            value: "2025"
+          },
+          {
+            label: "2024",
+            value: "2024"
+          },
+          {
+            label: "2023",
+            value: "2023"
+          }
+        ]}
+      />
     </View>
   );
 }

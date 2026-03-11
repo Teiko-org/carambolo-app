@@ -7,21 +7,27 @@ const styles = StyleSheet.create({
         borderStyle: "solid",
         borderRadius: 12,
         width: "100%",
-        height: 600,
+        height: 625,
         overflow: "hidden",
     },
     containerHeader: {
         backgroundColor: "#103464",
-        height: 100,
-        padding: 10
+        height: 150,
+        padding: 15,
+        display: 'flex',
+        justifyContent: 'space-between'
     },
     headerText: {
         fontSize: 20,
+        fontWeight: 'bold',
         color: "#A47032",
         width: "70%"
     },
     filters: {
-
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'row',
+        justifyContent: 'space-between'
     }
 })
 
