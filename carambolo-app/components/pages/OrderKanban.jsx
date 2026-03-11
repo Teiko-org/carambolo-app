@@ -1,7 +1,15 @@
 import { Pressable, View, Text, Image, ScrollView } from "react-native"
 import KanbanColumn from "../organisms/KanbanColumn/KanbanColumn"
+import ButtonSideMenu from "../atoms/ButtonSideMenu/ButtonSideMenu"
+import { useState } from "react"
+import SideMenu from "../organisms/SideMenu/SideMenu"
 
 const OrderKanban = () => {
+
+    const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
+
+    // const openSideMenu = () => setIsSideMenuOpen(true);
+    // const closeSideMenu = () => setIsSideMenuOpen(false);
 
     return (
         <View style={{ height: "100%", backgroundColor: "#FFEEE7" }}>
@@ -11,6 +19,10 @@ const OrderKanban = () => {
                 <KanbanColumn title="Pagos" />
                 <KanbanColumn title="Concluídos" />
             </ScrollView>
+
+            <ButtonSideMenu open={false} />
+
+            {isSideMenuOpen && <SideMenu open={true} />}
 
         </View>
 

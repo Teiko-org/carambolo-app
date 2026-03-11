@@ -2,8 +2,9 @@ import { Pressable, View, Text, Image } from "react-native"
 import styles from "./SideMenu.styles"
 import ButtonSideMenuItem from "../../atoms/ButtonSideMenuItem/ButtonSideMenuItem"
 import { useState } from "react"
+import ButtonSideMenu from "../../atoms/ButtonSideMenu/ButtonSideMenu"
 
-const SideMenu = () => {
+const SideMenu = (onClose) => {
 
     const [selected, setSelected] = useState("Dashboard")
 
@@ -28,9 +29,7 @@ const SideMenu = () => {
 
             </View>
 
-            <Pressable style={styles.sideMenuButton}>
-                <Text style={styles.sideMenuButtonText}>|||</Text>
-            </Pressable>
+            <ButtonSideMenu onClick={onClose} />
 
         </View>
     )
