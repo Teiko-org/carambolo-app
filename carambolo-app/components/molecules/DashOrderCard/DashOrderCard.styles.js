@@ -7,15 +7,14 @@ export const styles = StyleSheet.create({
         borderColor: "#D4B076",
         borderStyle: "solid",
         borderRadius: 16,
-        height: "12%",
-        width: "90%",
+        height: 90,
+        width: "100%",
         justifyContent: "space-between",
         padding: 8,
     },
     title: {
         fontSize: 14,
         fontWeight: "bold",
-        paddingLeft: 6 
     },
     footer: {
         display: "flex",

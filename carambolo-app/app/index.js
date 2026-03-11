@@ -1,12 +1,13 @@
 import { StyleSheet, Text, View } from "react-native";
 import DashOrderContainer from "../components/organisms/DashOrderContainer/DashOrderContainer";
+import { ClipboardList } from "lucide-react-native";
+import MonthlyOrdersChart from "../components/organisms/MonthlyOrdersChart/MonthlyOrdersChart";
 
 export default function Page() {
+
   return (
     <View style={styles.container}>
-      <DashOrderContainer 
-        title="Massas - Pedidos Pendentes"
-      />
+      <MonthlyOrdersChart />
     </View>
   );
 }
@@ -14,8 +15,7 @@ export default function Page() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
-    padding: 24,
+    padding: 14,
   },
   main: {
     flex: 1,

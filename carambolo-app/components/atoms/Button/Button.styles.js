@@ -16,7 +16,7 @@ export const buttonStyles = (size) => StyleSheet.create({
         borderRadius: 12,
         paddingHorizontal: 6,
         paddingVertical: 4,
-        width: size == "small" ? 80 : 120,
+        width: size == "small" ? 80 : 190,
         alignItems: "center",
         justifyContent: "center",
     },
@@ -26,9 +26,11 @@ export const buttonStyles = (size) => StyleSheet.create({
         borderColor: "#D4B076",
         borderStyle: "solid",
         borderRadius: 12,
-        marginTop: 16,
         paddingHorizontal: 6,
         paddingVertical: 4,
+        width: size == "small" ? 80 : 190,
+        alignItems: "center",
+        justifyContent: "center",
         opacity: 0.7,
     }
 })
