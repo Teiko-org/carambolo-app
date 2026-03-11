@@ -7,7 +7,8 @@ const styles = StyleSheet.create({
         borderColor: "#A47032",
         borderStyle: "solid",
         borderRadius: 12,
-        overflow: 'hidden'
+        overflow: 'hidden',
+        maxHeight: 400,
     },
     headerContainer: {
         backgroundColor: "#103464",
@@ -24,7 +25,10 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         paddingTop: 20
-    }
+    },
+    cardsContainer: {
+        padding: 12,
+    },
 })
 
 export default styles

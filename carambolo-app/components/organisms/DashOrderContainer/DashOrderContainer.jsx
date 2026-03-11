@@ -16,7 +16,12 @@ const DashOrderContainer = ({
                 {icon}
                 {title}
             </Text>
-            <ScrollView contentContainerStyle={{ gap: 12 }}>
+            <ScrollView
+                style={styles.cardsContainer}
+                contentContainerStyle={{ gap: 12, paddingBottom: 8 }}
+                showsVerticalScrollIndicator={true}
+                nestedScrollEnabled
+            >
                 {orders.map((order, index) => (
                     <DashOrderCard
                         key={index}

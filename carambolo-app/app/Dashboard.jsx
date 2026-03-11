@@ -58,7 +58,7 @@ const Dashboard = () => {
     }, [])
 
     return (
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, paddingHorizontal: 20, backgroundColor: "#FFEEE7"}}>
             <ScrollView contentContainerStyle={{ gap: 40, marginBottom: 20 }}>
 
                 <DashOrderContainer

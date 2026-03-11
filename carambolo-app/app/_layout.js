@@ -1,19 +1,12 @@
 import { StatusBar, StyleSheet, Text, View } from "react-native";
-import { Slot } from 'expo-router';
+import { Slot } from "expo-router";
 
 export default function Layout() {
-
   return (
-
     <View style={{ width: "100%", height: "100%" }}>
-
       <StatusBar style="auto" />
-
-      <Slot>
-      </Slot>
-
+      <Slot></Slot>
     </View>
-
   );
 }
 

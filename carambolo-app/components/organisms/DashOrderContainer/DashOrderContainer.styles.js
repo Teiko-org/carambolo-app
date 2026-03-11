@@ -8,8 +8,9 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderRadius: 16,
     width: "100%",
-    maxHeight: 300,
     padding: 6,
+    maxHeight: 300,
+    overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -27,9 +28,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   cardsContainer: {
-    display: "flex",
-    alignItems: "center",
-    height: "80%",
+    maxHeight: 220,
+    flexGrow: 0,
   },
 });
 
