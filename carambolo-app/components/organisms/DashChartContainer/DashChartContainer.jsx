@@ -1,6 +1,5 @@
 import { Text, View } from "react-native"
 import styles from "./DashChartContainer.styles"
-import MonthlyOrdersChart from "../../molecules/MonthlyOrdersChart/MonthlyOrdersChart"
 import Select from "../../atoms/Select/Select"
 
 const DashChartContainer = ({ headerText, children, massasOptions, anosOptions }) => {
