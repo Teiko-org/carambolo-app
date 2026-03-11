@@ -1,8 +1,9 @@
 import { Pressable, View, Text } from "react-native"
 import styles from "./ButtonSideMenuItem.styles"
+import { Link } from "expo-router"
 // import { MdOutlineSpaceDashboard } from "react-icons/md";
 
-const ButtonSideMenuItem = ({ icon, text, selected, setSelected, exit }) => {
+const ButtonSideMenuItem = ({ icon, text, selected, setSelected, exit, route }) => {
 
     const handleSelect = () => {
         setSelected(text)
@@ -10,18 +11,16 @@ const ButtonSideMenuItem = ({ icon, text, selected, setSelected, exit }) => {
     }
 
     return (
-        <Pressable style={exit ? styles(selected, exit).buttonExit : styles(selected, exit).buttonSelected} onPress={handleSelect}>
-
-            <View>
+        <Link style={exit ? styles(selected, exit).buttonExit : styles(selected, exit).buttonSelected} onPress={handleSelect}
+        href={`/${route}`}>
 
                 {/* <MdOutlineSpaceDashboard /> */}
 
                 <Text style={exit ? styles(selected, exit).textExit : styles(selected, exit).textSelected}>
                     {text}
                 </Text>
-            </View>
 
-        </Pressable>
+        </Link>
     )
 }
 

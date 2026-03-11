@@ -1,8 +1,8 @@
 import { Pressable, View, Text, Image, ScrollView, Modal } from "react-native"
-import KanbanColumn from "../organisms/KanbanColumn/KanbanColumn"
-import ButtonSideMenu from "../atoms/ButtonSideMenu/ButtonSideMenu"
+import KanbanColumn from "../components/organisms/KanbanColumn/KanbanColumn"
+import ButtonSideMenu from "../components/atoms/ButtonSideMenu/ButtonSideMenu"
 import { useState } from "react"
-import SideMenu from "../organisms/SideMenu/SideMenu"
+import SideMenu from "../components/organisms/SideMenu/SideMenu"
 
 const OrderKanban = () => {
 
