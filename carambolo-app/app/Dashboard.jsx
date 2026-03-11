@@ -1,7 +1,7 @@
 import { ScrollView, View } from "react-native"
-import MonthlyOrdersChart from "../molecules/MonthlyOrdersChart/MonthlyOrdersChart"
-import DashChartContainer from "../organisms/DashChartContainer/DashChartContainer"
-import DashOrderContainer from "../organisms/DashOrderContainer/DashOrderContainer"
+import MonthlyOrdersChart from "../components/molecules/MonthlyOrdersChart/MonthlyOrdersChart"
+import DashChartContainer from "../components/organisms/DashChartContainer/DashChartContainer"
+import DashOrderContainer from "../components/organisms/DashOrderContainer/DashOrderContainer"
 import { useEffect, useState } from "react"
 import { ClipboardList } from "lucide-react-native";
 
@@ -9,8 +9,9 @@ const Dashboard = () => {
     const [massaOrders, setMasssaOrders] = useState([{}])
     const [recheiosOrders, setRecheiosOrders] = useState([{}])
 
-    useEffect(async () => {
-        await setMasssaOrders([
+    useEffect(() => {
+        // populate orders; no need for async since we aren't awaiting real async work
+        setMasssaOrders([
             {
                 title: "Cacau Expresso",
                 ordersQuantity: 99,
@@ -32,7 +33,7 @@ const Dashboard = () => {
                 ordersStatus: "PENDENTE"
             }
         ])
-        await setRecheiosOrders([
+        setRecheiosOrders([
             {
                 title: "Brigadeiro",
                 ordersQuantity: 99,

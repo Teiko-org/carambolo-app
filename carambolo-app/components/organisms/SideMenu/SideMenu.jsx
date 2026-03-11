@@ -31,10 +31,10 @@ const SideMenu = ({onClose}) => {
                     <Image source={require("../../../assets/LogoComFundoDash.png")} style={{ width: "100%", height: 100 }} />
 
                     <View>
-                        <ButtonSideMenuItem text="Dashboard" setSelected={setSelected} selected={(selected == "Dashboard")} />
-                        <ButtonSideMenuItem text="Pedidos" setSelected={setSelected} selected={(selected == "Pedidos")} />
-                        <ButtonSideMenuItem text="Produtos" setSelected={setSelected} selected={(selected == "Produtos")} />
-                        <ButtonSideMenuItem text="Produção" setSelected={setSelected} selected={(selected == "Produção")} />
+                        <ButtonSideMenuItem text="Dashboard" setSelected={setSelected} selected={(selected == "Dashboard")} route="Dashboard" />
+                        <ButtonSideMenuItem text="Pedidos" setSelected={setSelected} selected={(selected == "Pedidos")} route="OrderKanban" />
+                        <ButtonSideMenuItem text="Produtos" setSelected={setSelected} selected={(selected == "Produtos")} route="#" />
+                        <ButtonSideMenuItem text="Produção" setSelected={setSelected} selected={(selected == "Produção")} route="#" />
                     </View>
 
                 </View>
