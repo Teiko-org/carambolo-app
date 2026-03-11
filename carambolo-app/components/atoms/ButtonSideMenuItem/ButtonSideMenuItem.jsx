@@ -16,9 +16,7 @@ const ButtonSideMenuItem = ({ icon, text, selected, setSelected, exit, route }) 
 
                 {/* <MdOutlineSpaceDashboard /> */}
 
-                <Text style={exit ? styles(selected, exit).textExit : styles(selected, exit).textSelected}>
                     {text}
-                </Text>
 
         </Link>
     )
