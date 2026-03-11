@@ -7,9 +7,7 @@ const styles = (selected, exit) => StyleSheet.create({
         
         borderTopRightRadius: 100,
         borderBottomRightRadius: 100,
-    },
 
-    textSelected: {
         color: selected ? "#103464" : "#A47032",
         fontSize: 16,
         fontWeight: "bold",
@@ -23,14 +21,11 @@ const styles = (selected, exit) => StyleSheet.create({
         
         borderTopRightRadius: 100,
         borderBottomRightRadius: 100,
-    },
 
-    textExit: {
         color: exit ? "white" : "#A47032",
         fontSize: 16,
         fontWeight: "bold",
         padding: 10,
-
     },
 
 })

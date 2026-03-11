@@ -4,9 +4,7 @@ import ButtonSideMenuItem from "../../atoms/ButtonSideMenuItem/ButtonSideMenuIte
 import { useState } from "react"
 import ButtonSideMenu from "../../atoms/ButtonSideMenu/ButtonSideMenu"
 
-const SideMenu = ({onClose}) => {
-
-    const [selected, setSelected] = useState("Dashboard")
+const SideMenu = ({onClose, selected, setSelected}) => {
 
     return (
 
