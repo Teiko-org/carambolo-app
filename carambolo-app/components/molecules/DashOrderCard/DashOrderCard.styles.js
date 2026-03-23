@@ -11,8 +11,8 @@ export const styles = StyleSheet.create({
     width: "100%",
     justifyContent: "space-between",
     padding: 8,
-    shadowColor: "#000",
-    shadowOffset: {
+    Color: "#000",
+    shadowOffshadowset: {
       width: 0,
       height: 1,
     },
