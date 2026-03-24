@@ -21,7 +21,7 @@ const Dashboard = () => {
         error: massasError,
         isLoading: isLoadingMassas
     } = useMassasPendentes()
-    console.log("massasData:", massasData)
+    console.log('massasData: ', massasData)
 
 
     return (
