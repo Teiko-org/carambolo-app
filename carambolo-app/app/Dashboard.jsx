@@ -21,6 +21,8 @@ const Dashboard = () => {
         error: massasError,
         isLoading: isLoadingMassas
     } = useMassasPendentes()
+    console.log('massasData: ', massasData)
+
 
     return (
         <View style={{ flex: 1, paddingHorizontal: 20, backgroundColor: "#FFEEE7" }}>
