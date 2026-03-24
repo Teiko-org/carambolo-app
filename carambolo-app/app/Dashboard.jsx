@@ -4,66 +4,32 @@ import DashChartContainer from "../components/organisms/DashChartContainer/DashC
 import DashOrderContainer from "../components/organisms/DashOrderContainer/DashOrderContainer"
 import { useEffect, useState } from "react"
 import { ClipboardList } from "lucide-react-native";
+import { useMassasPendentes } from "../hooks/useDashboard"
+
+const renderComponentByStatus = (
+    isErrorMassas,
+    errorMassas,
+    isLoadingMassas,
+    massasData
+) => {
+
+}
 
 const Dashboard = () => {
-    const [massaOrders, setMasssaOrders] = useState([{}])
-    const [recheiosOrders, setRecheiosOrders] = useState([{}])
-
-    useEffect(() => {
-        // populate orders; no need for async since we aren't awaiting real async work
-        setMasssaOrders([
-            {
-                title: "Cacau Expresso",
-                ordersQuantity: 99,
-                ordersStatus: "PENDENTE"
-            },
-            {
-                title: "Amarula",
-                ordersQuantity: 99,
-                ordersStatus: "PENDENTE"
-            },
-            {
-                title: "Laranja",
-                ordersQuantity: 99,
-                ordersStatus: "PENDENTE"
-            },
-            {
-                title: "Mármore",
-                ordersQuantity: 99,
-                ordersStatus: "PENDENTE"
-            }
-        ])
-        setRecheiosOrders([
-            {
-                title: "Brigadeiro",
-                ordersQuantity: 99,
-                ordersStatus: "PENDENTE"
-            },
-            {
-                title: "Doce de Leite",
-                ordersQuantity: 99,
-                ordersStatus: "PENDENTE"
-            },
-            {
-                title: "Guaraná",
-                ordersQuantity: 99,
-                ordersStatus: "PENDENTE"
-            },
-            {
-                title: "Baunilha",
-                ordersQuantity: 99,
-                ordersStatus: "PENDENTE"
-            }
-        ])
-    }, [])
+    const {
+        data: massasData,
+        isError: isErrorMassas,
+        error: massasError,
+        isLoading: isLoadingMassas
+    } = useMassasPendentes()
 
     return (
-        <View style={{ flex: 1, paddingHorizontal: 20, backgroundColor: "#FFEEE7"}}>
+        <View style={{ flex: 1, paddingHorizontal: 20, backgroundColor: "#FFEEE7" }}>
             <ScrollView contentContainerStyle={{ gap: 40, marginBottom: 20 }}>
 
                 <DashOrderContainer
                     title="Pedidos Pendentes - Massa"
-                    cards={massaOrders}
+                    cards={massasData}
                     icon={
                         <ClipboardList size={30} />
                     }
@@ -77,7 +43,6 @@ const Dashboard = () => {
                 />
                 <DashChartContainer
                     headerText="Massas Mais Pedidas Por Mês - 2025"
-                    children={<MonthlyOrdersChart />}
                     massasOptions={[
                         {
                             label: "Chocolate",
@@ -106,7 +71,8 @@ const Dashboard = () => {
                             value: "2023"
                         }
                     ]}
-                />
+                > <MonthlyOrdersChart />
+                </DashChartContainer>
             </ScrollView>
         </View>
 
