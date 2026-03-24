@@ -2,18 +2,17 @@ import { ScrollView, View } from "react-native"
 import MonthlyOrdersChart from "../components/molecules/MonthlyOrdersChart/MonthlyOrdersChart"
 import DashChartContainer from "../components/organisms/DashChartContainer/DashChartContainer"
 import DashOrderContainer from "../components/organisms/DashOrderContainer/DashOrderContainer"
-import { useEffect, useState } from "react"
 import { ClipboardList } from "lucide-react-native";
 import { useMassasPendentes } from "../hooks/useDashboard"
 
-const renderComponentByStatus = (
-    isErrorMassas,
-    errorMassas,
-    isLoadingMassas,
-    massasData
-) => {
+// const renderComponentByStatus = (
+//     isErrorMassas,
+//     errorMassas,
+//     isLoadingMassas,
+//     massasData
+// ) => {
 
-}
+// }
 
 const Dashboard = () => {
     const {
@@ -22,6 +21,8 @@ const Dashboard = () => {
         error: massasError,
         isLoading: isLoadingMassas
     } = useMassasPendentes()
+    console.log("massasData:", massasData)
+
 
     return (
         <View style={{ flex: 1, paddingHorizontal: 20, backgroundColor: "#FFEEE7" }}>
@@ -36,7 +37,7 @@ const Dashboard = () => {
                 />
                 <DashOrderContainer
                     title="Pedidos Pendentes - Recheios"
-                    cards={recheiosOrders}
+                    cards={{}}
                     icon={
                         <ClipboardList size={30} />
                     }
