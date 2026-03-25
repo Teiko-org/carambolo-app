@@ -15,8 +15,14 @@ const OrderCard = ({ order }) => {
 
     return (
         <View style={styles.container}>
+
+            
+
             <Text style={styles.bold}>
                 {order.name}
+                <Text>
+                N° 1000
+            </Text>
             </Text>
 
             <Text>
@@ -25,6 +31,10 @@ const OrderCard = ({ order }) => {
 
             <Text>
                 {order.type}
+            </Text>
+
+            <Text>
+                99/99/9999
             </Text>
 
             <View style={styles.flexRow}>
