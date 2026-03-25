@@ -3,7 +3,7 @@ import MonthlyOrdersChart from "../components/molecules/MonthlyOrdersChart/Month
 import DashChartContainer from "../components/organisms/DashChartContainer/DashChartContainer"
 import DashOrderContainer from "../components/organisms/DashOrderContainer/DashOrderContainer"
 import { ClipboardList } from "lucide-react-native";
-import { useMassasPendentes } from "../hooks/useDashboard"
+import { usePendingMassaOrders, usePendingRecheiosOrders } from "../hooks/useDashboard"
 
 // const renderComponentByStatus = (
 //     isErrorMassas,
@@ -16,13 +16,15 @@ import { useMassasPendentes } from "../hooks/useDashboard"
 
 const Dashboard = () => {
     const {
-        data: massasData,
+        data: pendingMassaOrders,
         // isError: isErrorMassas,
         // error: massasError,
         // isLoading: isLoadingMassas
-    } = useMassasPendentes()
-    console.log('massasData: ', massasData)
+    } = usePendingMassaOrders()
 
+    // const {
+    //     data: pendingRecheioOrders
+    // } = usePendingRecheiosOrders()
 
     return (
         <View style={{ flex: 1, paddingHorizontal: 20, backgroundColor: "#FFEEE7" }}>
@@ -30,14 +32,17 @@ const Dashboard = () => {
 
                 <DashOrderContainer
                     title="Pedidos Pendentes - Massa"
-                    cards={massasData}
+                    orders={pendingMassaOrders}
                     icon={
                         <ClipboardList size={30} />
                     }
                 />
                 <DashOrderContainer
                     title="Pedidos Pendentes - Recheios"
-                    cards={{}}
+                    orders={{
+                        id: 1,
+
+                    }}
                     icon={
                         <ClipboardList size={30} />
                     }

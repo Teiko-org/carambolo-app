@@ -6,7 +6,7 @@ import PropTypes from "prop-types"
 
 const DashOrderContainer = ({
     title,
-    cards: orders,
+    orders,
     icon,
     shouldShowFooterButton,
     remainingOrders,
@@ -64,7 +64,7 @@ const DashOrderContainer = ({
 
 DashOrderContainer.propTypes = {
     title: PropTypes.string,
-    cards: PropTypes.oneOfType([
+    orders: PropTypes.oneOfType([
         PropTypes.arrayOf(
             PropTypes.shape({
                 massaId: PropTypes.number,
