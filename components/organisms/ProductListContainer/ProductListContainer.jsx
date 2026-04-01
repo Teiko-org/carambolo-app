@@ -1,7 +1,7 @@
 import PropTypes from "prop-types"
 import { Plus } from "lucide-react-native"
 import { Pressable, Text, View } from "react-native"
-import ProductListItem from "../../molecules/ProductListItem/ProductListItem"
+import ProductListCard from "../../molecules/ProductListCard/ProductListCard"
 import styles from "./ProductListContainer.styles"
 
 const ProductListContainer = ({ title, products, weeklyLabel, weeklyPrice, addButtonText, onAddProduct }) => {
@@ -12,7 +12,7 @@ const ProductListContainer = ({ title, products, weeklyLabel, weeklyPrice, addBu
             </View>
 
             {products.map((product, index) => (
-                <ProductListItem key={`${product.name}-${index}`} name={product.name} quantity={product.quantity} />
+                <ProductListCard key={`${product.name}-${index}`} name={product.name} quantity={product.quantity} />
             ))}
 
             <View style={styles.weeklyRow}>

@@ -1,9 +1,9 @@
 import PropTypes from "prop-types"
 import { Eye } from "lucide-react-native"
 import { Text, View } from "react-native"
-import styles from "./ProductListItem.styles"
+import styles from "./ProductListCard.styles"
 
-const ProductListItem = ({ name, quantity }) => {
+const ProductListCard = ({ name, quantity }) => {
     return (
         <View style={styles.row}>
             <View style={styles.info}>
@@ -16,9 +16,9 @@ const ProductListItem = ({ name, quantity }) => {
     )
 }
 
-ProductListItem.propTypes = {
+ProductListCard.propTypes = {
     name: PropTypes.string.isRequired,
     quantity: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
 }
 
-export default ProductListItem
+export default ProductListCard
