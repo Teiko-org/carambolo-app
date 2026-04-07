@@ -31,10 +31,8 @@ const MostOrderedCard = ({ cardTitle, quantity, amount }) => {
 
 MostOrderedCard.propTypes = {
     cardTitle: PropTypes.string.isRequired,
-    quantity: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
-        .isRequired,
-    amount: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
-        .isRequired,
+    quantity: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    amount: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
 }
 
 export default MostOrderedCard

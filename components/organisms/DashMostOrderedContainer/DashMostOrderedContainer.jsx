@@ -2,23 +2,47 @@ import PropTypes from "prop-types"
 import { ScrollView, Text, View } from "react-native"
 import styles from "./DashMostOrderedContainer.styles"
 import MostOrderedCard from "../../molecules/MostOrderedCard/MostOrderedCard"
+import ChipFilter from "../../atoms/ChipFilter/ChipFilter"
+import { useState } from "react"
 
 
 const DashMostOrderedContainer = ({
     title,
+    subtitle,
     orders,
 }) => {
+    const [selectedChip, setSelectedChip] = useState('ALL')
+
+    const handleSelectChip = (selectedChipTitle) => {
+        setSelectedChip(selectedChipTitle)
+    }
+
     return (
         <View style={styles.container}>
             <View style={styles.headerContainer}>
                 <Text style={styles.headerTitle}>
                     {title}
                 </Text>
-                {/* <View style={styles.filtersContainer}>
-                    {
-                        // adicionar filtros
-                    }
-                </View> */}
+                <Text style={styles.headerSubtitle}>
+                    {subtitle}
+                </Text>
+                <View style={styles.filtersContainer}>
+                    <ChipFilter
+                        text='Todos'
+                        selected={selectedChip === 'ALL'}
+                        onPress={() => handleSelectChip('ALL')}
+                    />
+                    <ChipFilter
+                        text='Carambolos'
+                        selected={selectedChip === 'CARAMBOLOS'}
+                        onPress={() => handleSelectChip('CARAMBOLOS')}
+                    />
+                    <ChipFilter
+                        text='Fornadas'
+                        selected={selectedChip === 'FORNADAS'}
+                        onPress={() => handleSelectChip('FORNADAS')}
+                    />
+                </View>
             </View>
             <ScrollView style={styles.cardsContainer}>
                 {orders.map((order) => (
@@ -51,6 +75,7 @@ const orderItem = PropTypes.shape({
 
 DashMostOrderedContainer.propTypes = {
     title: PropTypes.string.isRequired,
+    subtitle: PropTypes.string.isRequired,
     filterOptions: PropTypes.arrayOf(selectOption),
     orders: PropTypes.arrayOf(orderItem).isRequired,
 }

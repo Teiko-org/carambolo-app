@@ -28,6 +28,12 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#A47032",
     width: "70%",
+    textShadowColor: "#000",
+    textShadowOffset: {
+      width: 0,
+      height: 0.3,
+    },
+    textShadowRadius: 1,
   },
   filters: {
     width: "100%",
