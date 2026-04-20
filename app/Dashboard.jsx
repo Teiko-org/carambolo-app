@@ -1,4 +1,5 @@
 import { ScrollView, View } from "react-native"
+import { useMemo, useState } from "react"
 import MonthlyOrdersChart from "../components/molecules/MonthlyOrdersChart/MonthlyOrdersChart"
 import DashChartContainer from "../components/organisms/DashChartContainer/DashChartContainer"
 import DashOrderContainer from "../components/organisms/DashOrderContainer/DashOrderContainer"
@@ -8,16 +9,10 @@ import DashTopCustomersContainer from "../components/organisms/DashTopCustomersC
 import DashLastOrdersContainer from "../components/organisms/DashLastOrdersContainer/DashLastOrdersContainer";
 import { useMostOrederd, usePendingMassaOrders, usePendingRecheiosOrders } from "../hooks/useDashboard";
 
-// const renderComponentByStatus = (
-//     isErrorMassas,
-//     errorMassas,
-//     isLoadingMassas,
-//     massasData
-// ) => {
-
-// }
-
 const Dashboard = () => {
+    const [selectedTipoItem, setSelectedTipoItem] = useState("MASSA")
+    const [selectedAno, setSelectedAno] = useState("2025")
+
     const {
         data: pendingMassaOrders,
         isError: isErrorMassas,
@@ -35,9 +30,55 @@ const Dashboard = () => {
     const {
         data: mostOrderedData,
         isError: isErrorMostOrdered,
-        error: mostOrderedError,
         isLoading: isLoadingMostOrdered,
-    } = useMostOrederd()
+    } = useMostOrederd({
+        tipoItem: selectedTipoItem,
+        periodo: "MES",
+        ano: Number(selectedAno),
+    })
+
+    const chartData = useMemo(() => {
+        if (!Array.isArray(mostOrderedData)) {
+            return []
+        }
+
+        const monthLabels = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+        const aggregatedByMonth = new Map()
+
+        mostOrderedData.forEach((item) => {
+            const period = item?.periodo
+            if (typeof period !== "string" || !period.includes("-")) {
+                return
+            }
+
+            const [, monthString] = period.split("-")
+            const monthIndex = Number(monthString) - 1
+            if (Number.isNaN(monthIndex) || monthIndex < 0 || monthIndex > 11) {
+                return
+            }
+
+            const monthLabel = monthLabels[monthIndex]
+            const quantity = Number(item?.quantidade || 0)
+            const currentData = aggregatedByMonth.get(monthLabel)
+
+            if (!currentData || quantity > currentData.value) {
+                aggregatedByMonth.set(monthLabel, {
+                    value: quantity,
+                    label: monthLabel,
+                    nomeItem: item?.nomeItem || "",
+                })
+            }
+        })
+
+        return Array.from(aggregatedByMonth.values())
+            .sort((a, b) => monthLabels.indexOf(a.label) - monthLabels.indexOf(b.label))
+            .map((item, index) => ({
+                value: item.value,
+                label: item.label,
+                nomeItem: item.nomeItem,
+                frontColor: index % 2 === 0 ? "#103464" : "#A47032",
+            }))
+    }, [mostOrderedData])
 
     return (
         <View style={{ flex: 1, paddingHorizontal: 20, backgroundColor: "#FFEEE7" }}>
@@ -45,14 +86,7 @@ const Dashboard = () => {
 
                 <DashOrderContainer
                     title="Pedidos Pendentes - Massa"
-                    orders={[
-                        {
-                            id: 1,
-                            title: 'massa123',
-                            ordersQuantity: 23,
-                            orderStatus: 'PENDENTE'
-                        },
-                    ]}
+                    orders={pendingMassaOrders}
                     icon={
                         <ClipboardList size={30} />
                     }
@@ -71,7 +105,7 @@ const Dashboard = () => {
                     isLoading={isLoadingRecheios}
                 />
                 <DashChartContainer
-                    headerText="Massas Mais Pedidas Por Mês - 2025"
+                    headerText={`${selectedTipoItem === "MASSA" ? "Massas" : "Recheios"} Mais Pedidos Por Mês - ${selectedAno}`}
                     itemOptions={[
                         {
                             label: "Massas",
@@ -96,38 +130,20 @@ const Dashboard = () => {
                             value: "2023"
                         }
                     ]}
+                    selectedTipoItem={selectedTipoItem}
+                    setSelectedTipoItem={setSelectedTipoItem}
+                    selectedAno={selectedAno}
+                    setSelectedAno={setSelectedAno}
                 >
-                    <MonthlyOrdersChart />
+                    <MonthlyOrdersChart
+                        data={chartData}
+                        isLoading={isLoadingMostOrdered}
+                        isError={isErrorMostOrdered}
+                    />
                 </DashChartContainer>
                 <DashMostOrderedContainer
                     title='Produtos mais pedidos'
                     subtitle='Todos os protudos mais pedidos dos seus clientes'
-                    orders={[
-                        {
-                            id: 1,
-                            title: 'Pedido dahora',
-                            quantity: 23,
-                            amount: 25.50
-                        },
-                        {
-                            id: 2,
-                            title: 'Pedido dahora',
-                            quantity: 23,
-                            amount: 25.50
-                        },
-                        {
-                            id: 3,
-                            title: 'Pedido dahora',
-                            quantity: 23,
-                            amount: 25.50
-                        },
-                        {
-                            id: 4,
-                            title: 'Pedido dahora',
-                            quantity: 23,
-                            amount: 25.50
-                        },
-                    ]}
                 />
                 <DashTopCustomersContainer
                     title='Principais Clientes'
