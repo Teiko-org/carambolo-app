@@ -3,7 +3,9 @@ import { Text, View } from "react-native"
 import styles from "./DashChartContainer.styles"
 import Select from "../../atoms/Select/Select"
 
-const DashChartContainer = ({ headerText, children, massasOptions, anosOptions }) => {
+const DashChartContainer = ({ headerText, children, itemOptions, anosOptions }) => {
+
+
 
     return (
         <View style={styles.container}>
@@ -12,7 +14,7 @@ const DashChartContainer = ({ headerText, children, massasOptions, anosOptions }
 
                 <View style={styles.filters}>
                     <Select
-                        options={massasOptions}
+                        options={itemOptions}
                         defaultValue={{
                             label: "Massas",
                             value: "massas"
@@ -41,7 +43,7 @@ const selectOption = PropTypes.shape({
 DashChartContainer.propTypes = {
     headerText: PropTypes.string.isRequired,
     children: PropTypes.node,
-    massasOptions: PropTypes.arrayOf(selectOption).isRequired,
+    itemOptions: PropTypes.arrayOf(selectOption).isRequired,
     anosOptions: PropTypes.arrayOf(selectOption).isRequired,
 }
 

@@ -3,8 +3,7 @@ import { useEffect, useState } from "react"
 import styles from "./Select.styles"
 import { Dropdown } from "react-native-element-dropdown"
 
-const Select = ({ defaultValue, options }) => {
-    const [selectedValue, setSelectedValue] = useState(defaultValue)
+const Select = ({ defaultValue, options, selectedValue, setSelectedValue }) => {
 
     useEffect(() => {
         async function handleDefaultValue() {

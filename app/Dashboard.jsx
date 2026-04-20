@@ -3,10 +3,10 @@ import MonthlyOrdersChart from "../components/molecules/MonthlyOrdersChart/Month
 import DashChartContainer from "../components/organisms/DashChartContainer/DashChartContainer"
 import DashOrderContainer from "../components/organisms/DashOrderContainer/DashOrderContainer"
 import { ClipboardList } from "lucide-react-native";
-import { usePendingMassaOrders, usePendingRecheiosOrders } from "../hooks/useDashboard"
 import DashMostOrderedContainer from "../components/organisms/DashMostOrderedContainer/DashMostOrderedContainer";
 import DashTopCustomersContainer from "../components/organisms/DashTopCustomersContainer/DashTopCustomersContainer";
 import DashLastOrdersContainer from "../components/organisms/DashLastOrdersContainer/DashLastOrdersContainer";
+import { useMostOrederd, usePendingMassaOrders, usePendingRecheiosOrders } from "../hooks/useDashboard";
 
 // const renderComponentByStatus = (
 //     isErrorMassas,
@@ -20,14 +20,24 @@ import DashLastOrdersContainer from "../components/organisms/DashLastOrdersConta
 const Dashboard = () => {
     const {
         data: pendingMassaOrders,
-        // isError: isErrorMassas,
-        // error: massasError,
-        // isLoading: isLoadingMassas
+        isError: isErrorMassas,
+        error: massasError,
+        isLoading: isLoadingMassas
     } = usePendingMassaOrders()
 
-    // const {
-    //     data: pendingRecheioOrders
-    // } = usePendingRecheiosOrders()
+    const {
+        data: pendingRecheioOrders,
+        isError: isErrorRecheios,
+        error: recheiosError,
+        isLoading: isLoadingRecheios
+    } = usePendingRecheiosOrders()
+
+    const {
+        data: mostOrderedData,
+        isError: isErrorMostOrdered,
+        error: mostOrderedError,
+        isLoading: isLoadingMostOrdered,
+    } = useMostOrederd()
 
     return (
         <View style={{ flex: 1, paddingHorizontal: 20, backgroundColor: "#FFEEE7" }}>
@@ -46,35 +56,30 @@ const Dashboard = () => {
                     icon={
                         <ClipboardList size={30} />
                     }
+                    isError={isErrorMassas}
+                    error={massasError}
+                    isLoading={isLoadingMassas}
                 />
                 <DashOrderContainer
                     title="Pedidos Pendentes - Recheios"
-                    orders={[
-                        {
-                            id: 1,
-                            title: 'recheio123',
-                            ordersQuantity: 23,
-                            orderStatus: 'PENDENTE'
-                        },
-                    ]}
+                    orders={pendingRecheioOrders}
                     icon={
                         <ClipboardList size={30} />
                     }
+                    isError={isErrorRecheios}
+                    error={recheiosError}
+                    isLoading={isLoadingRecheios}
                 />
                 <DashChartContainer
                     headerText="Massas Mais Pedidas Por Mês - 2025"
-                    massasOptions={[
+                    itemOptions={[
                         {
-                            label: "Chocolate",
-                            value: "chocolate",
+                            label: "Massas",
+                            value: "MASSA",
                         },
                         {
-                            label: "Baunilha",
-                            value: "baunilha",
-                        },
-                        {
-                            label: "Laranja",
-                            value: "laranja",
+                            label: "Recheios",
+                            value: "RECHEIO",
                         }
                     ]}
                     anosOptions={[
@@ -91,7 +96,8 @@ const Dashboard = () => {
                             value: "2023"
                         }
                     ]}
-                > <MonthlyOrdersChart />
+                >
+                    <MonthlyOrdersChart />
                 </DashChartContainer>
                 <DashMostOrderedContainer
                     title='Produtos mais pedidos'

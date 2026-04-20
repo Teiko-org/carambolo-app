@@ -47,9 +47,8 @@ const DashOrderContainer = ({
                 {orders.map((order, index) => (
                     <DashOrderCard
                         key={index}
-                        title={order.title}
-                        ordersQuantity={order.ordersQuantity}
-                        ordersStatus={order.ordersStatus}
+                        title={order.nomeMassa || order.nomeRecheio}
+                        ordersQuantity={order.quantidade}
                     />
                 ))}
             </ScrollView>
