@@ -44,12 +44,11 @@ const DashOrderContainer = ({
                 showsVerticalScrollIndicator={true}
                 nestedScrollEnabled
             >
-                {orders.map((order, index) => (
+                {(orders || []).map((order, index) => (
                     <DashOrderCard
                         key={index}
-                        title={order.title}
-                        ordersQuantity={order.ordersQuantity}
-                        ordersStatus={order.ordersStatus}
+                        title={order.nomeMassa || order.nomeRecheio}
+                        ordersQuantity={order.quantidade}
                     />
                 ))}
             </ScrollView>
@@ -93,7 +92,7 @@ DashOrderContainer.propTypes = {
 
 DashOrderContainer.defaultProps = {
     title: null,
-    cards: [],
+    orders: [],
     icon: null,
     shouldShowFooterButton: false,
     remainingOrders: 0,
