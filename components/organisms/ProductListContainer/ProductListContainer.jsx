@@ -4,16 +4,30 @@ import { Pressable, Text, View } from "react-native"
 import ProductListCard from "../../molecules/ProductListCard/ProductListCard"
 import styles from "./ProductListContainer.styles"
 
-const ProductListContainer = ({ title, products, weeklyLabel, weeklyPrice, addButtonText, onAddProduct }) => {
+const ProductListContainer = ({
+    title,
+    products,
+    weeklyLabel,
+    weeklyPrice,
+    addButtonText,
+    onAddProduct,
+    emptyMessage,
+}) => {
     return (
         <View style={styles.card}>
             <View style={styles.header}>
                 <Text style={styles.headerText}>{title}</Text>
             </View>
 
-            {products.map((product, index) => (
-                <ProductListCard key={`${product.name}-${index}`} name={product.name} quantity={product.quantity} />
-            ))}
+            {products.length === 0 ? (
+                <View style={styles.emptyState}>
+                    <Text style={styles.emptyStateText}>{emptyMessage}</Text>
+                </View>
+            ) : (
+                products.map((product, index) => (
+                    <ProductListCard key={`${product.name}-${index}`} name={product.name} quantity={product.quantity} />
+                ))
+            )}
 
             <View style={styles.weeklyRow}>
                 <Text style={styles.weeklyText}>{weeklyLabel}</Text>
@@ -42,6 +56,7 @@ ProductListContainer.propTypes = {
     weeklyPrice: PropTypes.string,
     addButtonText: PropTypes.string,
     onAddProduct: PropTypes.func,
+    emptyMessage: PropTypes.string,
 }
 
 ProductListContainer.defaultProps = {
@@ -51,6 +66,7 @@ ProductListContainer.defaultProps = {
     weeklyPrice: "R$ 0,00",
     addButtonText: "ADICIONAR NOVO PRODUTO",
     onAddProduct: () => {},
+    emptyMessage: "Nenhum produto encontrado.",
 }
 
 export default ProductListContainer

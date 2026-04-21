@@ -21,6 +21,16 @@ const styles = StyleSheet.create({
         fontSize: 35,
         fontWeight: "700",
     },
+    emptyState: {
+        paddingHorizontal: 14,
+        paddingVertical: 20,
+        backgroundColor: "#F9EFEA",
+    },
+    emptyStateText: {
+        color: "#5C4A42",
+        fontSize: 22,
+        fontWeight: "500",
+    },
     weeklyRow: {
         flexDirection: "row",
         justifyContent: "space-between",
