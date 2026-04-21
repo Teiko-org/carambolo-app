@@ -55,6 +55,12 @@ const SideMenu = ({ onClose, selected, setSelected }) => {
                             selected={selected == "Produção"}
                             route="#"
                         />
+                        <ButtonSideMenuItem
+                            text="Assistente"
+                            setSelected={setSelected}
+                            selected={selected == "Assistente"}
+                            route="Assistant"
+                        />
                     </View>
                 </View>
 
