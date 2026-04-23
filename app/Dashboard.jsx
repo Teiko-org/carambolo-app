@@ -3,7 +3,7 @@ import MonthlyOrdersChart from "../components/molecules/MonthlyOrdersChart/Month
 import DashChartContainer from "../components/organisms/DashChartContainer/DashChartContainer"
 import DashOrderContainer from "../components/organisms/DashOrderContainer/DashOrderContainer"
 import { ClipboardList } from "lucide-react-native";
-import { usePendingMassaOrders, usePendingRecheiosOrders } from "../hooks/useDashboard"
+import { usePendingMassaOrders } from "../hooks/useDashboard"
 
 // const renderComponentByStatus = (
 //     isErrorMassas,
@@ -39,10 +39,7 @@ const Dashboard = () => {
                 />
                 <DashOrderContainer
                     title="Pedidos Pendentes - Recheios"
-                    orders={{
-                        id: 1,
-
-                    }}
+                    orders={[]}
                     icon={
                         <ClipboardList size={30} />
                     }

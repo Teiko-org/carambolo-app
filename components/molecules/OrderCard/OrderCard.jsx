@@ -16,8 +16,6 @@ const OrderCard = ({ order }) => {
     return (
         <View style={styles.container}>
 
-            
-
             <Text style={styles.bold}>
                 {order.name}
                 <Text>

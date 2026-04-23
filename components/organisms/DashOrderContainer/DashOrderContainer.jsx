@@ -44,7 +44,7 @@ const DashOrderContainer = ({
                 showsVerticalScrollIndicator={true}
                 nestedScrollEnabled
             >
-                {orders.map((order, index) => (
+                {(orders || []).map((order, index) => (
                     <DashOrderCard
                         key={index}
                         title={order.title}
@@ -93,7 +93,7 @@ DashOrderContainer.propTypes = {
 
 DashOrderContainer.defaultProps = {
     title: null,
-    cards: [],
+    orders: [],
     icon: null,
     shouldShowFooterButton: false,
     remainingOrders: 0,
