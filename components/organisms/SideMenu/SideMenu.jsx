@@ -47,7 +47,7 @@ const SideMenu = ({ onClose, selected, setSelected }) => {
                             text="Produtos"
                             setSelected={setSelected}
                             selected={selected == "Produtos"}
-                            route="#"
+                            route="Products"
                         />
                         <ButtonSideMenuItem
                             text="Produção"

@@ -33,14 +33,9 @@ const styles = StyleSheet.create({
     },
     textShadowRadius: 1,
   },
-  filtersContainer: {
-    width: "100%",
-    display: "flex",
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
   cardsContainer: {
     padding: 12,
+    gap: 10,
   },
   headerSubtitle: {
     fontSize: 16,
