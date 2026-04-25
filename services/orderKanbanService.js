@@ -3,6 +3,7 @@ import api from "./api/api";
 export const getOrders = async () => {
   console.log("Buscando pedidos do back-end");
   const { data } = await api.get("/bolos/pedido/completo");
+  console.log(data);
   return data;
 };
 

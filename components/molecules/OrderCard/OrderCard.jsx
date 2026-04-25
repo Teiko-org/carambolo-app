@@ -5,12 +5,12 @@ import Button from "../../atoms/Button/Button"
 import { useState } from "react";
 import OrderSummary from "../../organisms/OrderSummary/OrderSummary";
 
-const OrderCard = ({ order }) => {
+const OrderCard = ({ order, deliveryDate, orderId }) => {
 
     const [isOrderSummaryOpen, setIsOrderSummaryOpen] = useState(false);
 
     const openModal = () => setIsOrderSummaryOpen(true);
-    
+
     const closeModal = () => setIsOrderSummaryOpen(false);
 
     return (
@@ -18,9 +18,9 @@ const OrderCard = ({ order }) => {
 
             <Text style={styles.bold}>
                 {order.name}
-                <Text>
-                N° 1000
-            </Text>
+                <Text style={{ marginLeft: 5 }} >
+                    N° {orderId}
+                </Text>
             </Text>
 
             <Text>
@@ -32,7 +32,7 @@ const OrderCard = ({ order }) => {
             </Text>
 
             <Text>
-                99/99/9999
+                {deliveryDate}
             </Text>
 
             <View style={styles.flexRow}>
@@ -50,7 +50,7 @@ const OrderCard = ({ order }) => {
                 transparent={true}
                 onRequestClose={closeModal}
             >
-                <OrderSummary onClose={closeModal} />
+                <OrderSummary onClose={closeModal} order={order.raw} />
             </Modal>
 
         </View>
@@ -64,7 +64,10 @@ OrderCard.propTypes = {
         type: PropTypes.string.isRequired,
         price: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
             .isRequired,
+        raw: PropTypes.object,
     }).isRequired,
+    deliveryDate: PropTypes.string,
+    orderId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
 }
 
 export default OrderCard

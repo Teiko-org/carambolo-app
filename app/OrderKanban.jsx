@@ -12,6 +12,12 @@ const COLUMNS = [
   { key: "CONCLUIDO", title: "Pedidos Concluídos" },
 ];
 
+const formatDate = (dateString) => {
+  if (!dateString) return "";
+  const [year, month, day] = dateString.split("-");
+  return `${day}/${month}/${year}`;
+};
+
 const normalizeOrder = (raw) => {
   const id = raw?.id ?? raw?.bolo?.id ?? String(Math.random());
 
@@ -22,6 +28,7 @@ const normalizeOrder = (raw) => {
     phone: raw?.telefoneCliente ?? "",
     type: raw?.tipoEntrega ?? "",
     price: raw?.valorTotal ?? raw?.bolo?.preco ?? "",
+    dataPrevisaoEntrega: formatDate(raw?.dataPrevisaoEntrega ?? ""),
     raw,
   };
 };
@@ -129,12 +136,9 @@ const DraggableOrderCard = ({
       {...panResponder.panHandlers}
     >
       <OrderCard
-        order={{
-          name: order.name,
-          phone: order.phone,
-          type: order.type,
-          price: order.price,
-        }}
+        order={order}
+        deliveryDate={order.dataPrevisaoEntrega}
+        orderId={order.id}
       />
     </Animated.View>
   );
@@ -390,12 +394,9 @@ const OrderKanban = () => {
           }}
         >
           <OrderCard
-            order={{
-              name: dragPreview.order.name,
-              phone: dragPreview.order.phone,
-              type: dragPreview.order.type,
-              price: dragPreview.order.price,
-            }}
+            order={dragPreview.order}
+            deliveryDate={dragPreview.order.dataPrevisaoEntrega}
+            orderId={dragPreview.order.id}
           />
         </View>
       )}
