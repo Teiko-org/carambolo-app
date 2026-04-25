@@ -59,4 +59,25 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 4,
   },
+  attachmentsContainer: {
+    marginTop: 10,
+    gap: 8,
+  },
+  attachmentBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#FFEEE7",
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: "#D4B076",
+    alignSelf: "flex-start",
+  },
+  attachmentText: {
+    color: "#103464",
+    fontSize: 13,
+    fontWeight: "600",
+  },
 });
