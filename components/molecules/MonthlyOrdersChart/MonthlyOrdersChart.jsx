@@ -1,6 +1,5 @@
 import PropTypes from "prop-types";
 import { Text, View } from "react-native";
-import { BarChart } from 'react-native-gifted-charts';
 import styles from './MonthlyOrdersChart.styles';
 
 const MonthlyOrdersChart = ({ data = [], isLoading, isError }) => {
@@ -29,40 +28,35 @@ const MonthlyOrdersChart = ({ data = [], isLoading, isError }) => {
   }
 
   const maxValue = Math.max(...data.map((item) => item.value), 1);
-  const normalizedData = data.map((item) => ({ ...item }));
+  const normalizedData = data.map((item, index) => ({
+    ...item,
+    frontColor: item.frontColor || (index % 2 === 0 ? "#103464" : "#A47032"),
+  }));
+  const barMaxWidth = 190;
 
   return (
     <View style={styles.chartWrapper}>
-      <View style={styles.chartRow}>
-        <View style={styles.chartArea}>
-          <BarChart
-            data={normalizedData}
-            horizontal={true}
-            barWidth={20}
-            barBorderTopRightRadius={100}
-            barBorderTopLeftRadius={100}
-            spacing={14}
-            initialSpacing={0}
-            endSpacing={0}
-            xAxisType="numeric"
-            rulesColor="transparent"
-            width={190}
-            height={360}
-            backgroundColor={"#FFE7DD"}
-            maxValue={Math.ceil(maxValue * 1.2)}
-            xAxisColor="#8A8A8A"
-            yAxisColor="transparent"
-          />
-        </View>
-        <View style={styles.labelsColumn}>
-          {normalizedData.map((item, index) => (
-            <View key={`${item.label}-${index}`} style={styles.itemLabelRow}>
-              <Text numberOfLines={1} ellipsizeMode="tail" style={styles.itemLabelText}>
-                {item.nomeItem || ""}
-              </Text>
+      <View style={styles.chartColumn}>
+        {normalizedData.map((item, index) => {
+          const ratio = Math.max(item.value / maxValue, 0.18);
+          const barWidth = ratio * barMaxWidth;
+
+          return (
+            <View key={`${item.label}-${index}`} style={styles.chartItem}>
+              <View style={styles.labelsRow}>
+                <Text style={styles.monthLabel}>{item.label}</Text>
+                <Text numberOfLines={1} ellipsizeMode="tail" style={styles.itemLabelText}>
+                  {item.nomeItem || ""}
+                </Text>
+              </View>
+
+              <View style={styles.metricsRow}>
+                <View style={[styles.bar, { width: barWidth, backgroundColor: item.frontColor }]} />
+                <Text style={styles.ordersCount}>{item.value} Pedidos</Text>
+              </View>
             </View>
-          ))}
-        </View>
+          );
+        })}
       </View>
     </View>
   );

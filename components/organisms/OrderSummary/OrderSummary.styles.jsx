@@ -5,7 +5,7 @@ const styles = StyleSheet.create({
     header: {
         backgroundColor: "#103464",
         width: "100%",
-        height: 100,
+        paddingVertical: 16,
 
         borderWidth: 1,
         borderStyle: "solid",
@@ -18,9 +18,6 @@ const styles = StyleSheet.create({
         justifyContent: "center",
 
         gap: 10,
-
-        position: "static",
-
     },
 
     headerTitle: {
@@ -45,6 +42,7 @@ const styles = StyleSheet.create({
         width: "100%",
         paddingVertical: 15,
         paddingHorizontal: 20,
+        maxHeight: "75%",
     },
 
     title: {

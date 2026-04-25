@@ -1,6 +1,5 @@
 import PropTypes from "prop-types"
 import { ScrollView, Text, View } from "react-native"
-import CustomerCard from "../../molecules/CustomerCard/CustomerCard"
 import styles from "./DashLastOrdersContainer.styles"
 import OrderCard from "../../molecules/OrderCard/OrderCard"
 
@@ -20,10 +19,15 @@ const DashLastOrdersContainer = ({
                     {subtitle}
                 </Text>
             </View>
-            <ScrollView style={styles.cardsContainer}>
-                {orders.map((order) => (
+            <ScrollView
+                style={styles.cardsContainer}
+                contentContainerStyle={styles.cardsContent}
+                showsVerticalScrollIndicator={true}
+                nestedScrollEnabled
+            >
+                {(orders || []).map((order, index) => (
                     <OrderCard
-                        key={order.id}
+                        key={order.id ?? index}
                         order={order}
                     />
                 ))}
@@ -32,25 +36,17 @@ const DashLastOrdersContainer = ({
     )
 }
 
-const selectOption = PropTypes.shape({
-    label: PropTypes.string.isRequired,
-    value: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
-        .isRequired,
-})
-
 const orderItem = PropTypes.shape({
     id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-    title: PropTypes.string.isRequired,
-    quantity: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
-        .isRequired,
-    amount: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
-        .isRequired,
+    name: PropTypes.string.isRequired,
+    phone: PropTypes.string.isRequired,
+    type: PropTypes.string.isRequired,
+    price: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
 })
 
 DashLastOrdersContainer.propTypes = {
     title: PropTypes.string.isRequired,
     subtitle: PropTypes.string.isRequired,
-    filterOptions: PropTypes.arrayOf(selectOption),
     orders: PropTypes.arrayOf(orderItem).isRequired,
 }
 

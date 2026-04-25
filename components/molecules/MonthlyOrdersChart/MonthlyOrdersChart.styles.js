@@ -5,29 +5,56 @@ const styles = StyleSheet.create({
         alignItems: "flex-start",
         paddingHorizontal: 12,
         paddingTop: 12,
+        paddingBottom: 10,
     },
-    chartRow: {
-        position: "relative",
+    chartColumn: {
         width: "100%",
-        minHeight: 360,
+        gap: 10,
     },
-    chartArea: {
-        width: 260,
+    chartItem: {
+        width: "100%",
+        gap: 4,
     },
-    labelsColumn: {
-        position: "absolute",
-        right: 0,
-        top: 0,
-        width: 105,
-        zIndex: 2,
+    labelsRow: {
+        width: "100%",
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
     },
-    itemLabelRow: {
-        height: 34,
-        justifyContent: "center",
+    monthLabel: {
+        fontSize: 15,
+        lineHeight: 20,
+        fontWeight: "600",
+        color: "#1F1F1F",
+        width: 80,
     },
     itemLabelText: {
-        fontSize: 11,
-        color: "#1f1f1f",
+        flex: 1,
+        textAlign: "right",
+        fontSize: 14,
+        lineHeight: 18,
+        fontWeight: "500",
+        color: "#1F1F1F",
+    },
+    metricsRow: {
+        width: "100%",
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+    },
+    bar: {
+        height: 25,
+        borderRadius: 10,
+        borderWidth: 2,
+        borderColor: "#A47032",
+    },
+    ordersCount: {
+        width: 95,
+        textAlign: "right",
+        fontSize: 13,
+        lineHeight: 17,
+        fontWeight: "400",
+        color: "#1F1F1F",
     },
 })
 
