@@ -42,3 +42,4 @@ yarn-error.*
 
 package-lock.json
 /carambolo-app/package-lock.json
+.kiro/settings/mcp.json
