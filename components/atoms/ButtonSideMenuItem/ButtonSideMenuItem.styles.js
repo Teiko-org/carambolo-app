@@ -1,6 +1,6 @@
 import { StyleSheet } from "react-native";
 
-const styles = (selected = false, exit = false, compact = false, isAssistantCta = false) =>
+const styles = (selected = false, compact = false, isAssistantCta = false) =>
     StyleSheet.create({
         button: {
    minHeight: isAssistantCta ? 42 : compact ? 65 : 65,
@@ -22,7 +22,7 @@ const styles = (selected = false, exit = false, compact = false, isAssistantCta 
     justifyContent: "center",
 },
 text: {
-    color: isAssistantCta ? "#BF9328" : exit ? "#FFFFFF" : "#FFFFFF",
+    color: isAssistantCta ? "#BF9328" : "#FFFFFF",
     fontSize: isAssistantCta ? 11 : 18,      // ← texto menor
     fontWeight: isAssistantCta ? "600" : selected ? "700" : "300",
     lineHeight: isAssistantCta ? 15 : 24,

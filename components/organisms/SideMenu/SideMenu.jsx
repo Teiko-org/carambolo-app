@@ -17,12 +17,12 @@ const NAV_ITEMS = [
     { text: "Produtos", route: "/Products", selectedKey: "Produtos" },
     { text: "Fornadas", route: "#", selectedKey: "Fornadas" },
     { text: "Dashboard", route: "/Dashboard", selectedKey: "Dashboard" },
-    {
-        text: "Importar histórico de pedidos",
-        route: "#",
-        selectedKey: "Importar histórico de pedidos",
-        compact: true,
-    },
+   {
+    text: "Importar histórico de pedidos",
+    route: "/ImportarDados",
+    selectedKey: "Importar histórico de pedidos",
+    compact: true,
+}
 ];
 
 const SideMenu = ({ onClose, selected, setSelected }) => {
