@@ -1,29 +1,16 @@
 import { useMemo } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   getCakeProducts,
   getLatestBatchProducts,
   getProducts,
+  updateBoloStatus,
+  updateFornadaStatus,
 } from "../services/productService"
 
-const currencyFormatter = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-})
-
-const dateFormatter = new Intl.DateTimeFormat("pt-BR")
-
-const formatWeeklyLabel = (items = []) => {
-  const firstItem = items.find((item) => item?.dataInicio && item?.dataFim)
-
-  if (!firstItem) {
-    return "Fornada da Semana"
-  }
-
-  return `${dateFormatter.format(new Date(firstItem.dataInicio))} - ${dateFormatter.format(new Date(firstItem.dataFim))}`
-}
-
 export const useProducts = () => {
+  const queryClient = useQueryClient()
+
   const query = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
@@ -32,11 +19,51 @@ export const useProducts = () => {
         getLatestBatchProducts(),
         getCakeProducts(),
       ])
+      return { productsPage: productsResponse, latestBatchProducts, cakeProducts }
+    },
+  })
 
-      return {
-        productsPage: productsResponse,
-        latestBatchProducts,
-        cakeProducts,
+  const toggleStatus = useMutation({
+    mutationFn: async ({ id, type, isAtivo }) => {
+      if (type === "bolo") {
+        await updateBoloStatus(id, isAtivo)
+      } else {
+        await updateFornadaStatus(id, isAtivo)
+      }
+    },
+    onMutate: async ({ id, type, isAtivo }) => {
+      await queryClient.cancelQueries({ queryKey: ["products"] })
+
+      const previous = queryClient.getQueryData(["products"])
+
+      queryClient.setQueryData(["products"], (old) => {
+        if (!old) return old
+
+        if (type === "bolo") {
+          return {
+            ...old,
+            cakeProducts: old.cakeProducts.map((item) =>
+              item?.boloId === id ? { ...item, ativo: isAtivo } : item
+            ),
+          }
+        } else {
+          return {
+            ...old,
+            productsPage: {
+              ...old.productsPage,
+              content: old.productsPage.content.map((item) =>
+                item?.id === id ? { ...item, ativo: isAtivo } : item
+              ),
+            },
+          }
+        }
+      })
+
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["products"], context.previous)
       }
     },
   })
@@ -49,6 +76,7 @@ export const useProducts = () => {
     const latestBatchProducts = Array.isArray(query.data?.latestBatchProducts)
       ? query.data.latestBatchProducts
       : []
+
     const cakeProducts = Array.isArray(query.data?.cakeProducts)
       ? query.data.cakeProducts
       : []
@@ -57,52 +85,41 @@ export const useProducts = () => {
       latestBatchProducts.map((item) => [item?.id, item])
     )
 
-    const fornadaProducts = allProducts
-      .filter((item) => item?.ativo ?? item?.isAtivo ?? true)
-      .map((item) => {
-        const latestBatchItem = latestBatchByProductId.get(item?.id)
-
-        return {
-          id: item?.id,
-          name: item?.produto ?? "Produto sem nome",
-          quantity: Number(latestBatchItem?.quantidade ?? 0),
-          price: Number(item?.valor ?? latestBatchItem?.valor ?? 0),
-          categoria: item?.categoria ?? "",
-          descricao: item?.descricao ?? "",
-          type: "fornada",
-        }
-      })
-
-    const bolosProducts = cakeProducts
-      .filter((item) => item?.ativo ?? true)
-      .map((item) => ({
-        id: item?.boloId,
-        name: item?.produto ?? "Bolo sem nome",
-        quantity: "-",
-        price: Number(item?.precoTotal ?? 0),
+    const fornadaProducts = allProducts.map((item) => {
+      const latestBatchItem = latestBatchByProductId.get(item?.id)
+      return {
+        id: item?.id,
+        name: item?.produto ?? "Produto sem nome",
+        quantity: Number(latestBatchItem?.quantidade ?? 0),
+        price: Number(item?.valor ?? latestBatchItem?.valor ?? 0),
         categoria: item?.categoria ?? "",
-        descricao: item?.saborRecheio ?? "",
-        type: "bolo",
-      }))
+        descricao: item?.descricao ?? "",
+        isAtivo: item?.ativo ?? item?.isAtivo ?? true,
+        type: "fornada",
+      }
+    })
+
+    const bolosProducts = cakeProducts.map((item) => ({
+      id: item?.boloId,
+      name: item?.produto ?? "Bolo sem nome",
+      quantity: "-",
+      price: Number(item?.precoTotal ?? 0),
+      categoria: item?.categoria ?? "",
+      descricao: item?.saborRecheio ?? "",
+      isAtivo: item?.ativo ?? true,
+      type: "bolo",
+    }))
 
     const products = [...fornadaProducts, ...bolosProducts]
       .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"))
 
-    const weeklyTotal = latestBatchProducts.reduce((accumulator, item) => {
-      const quantity = Number(item?.quantidade ?? 0)
-      const value = Number(item?.valor ?? 0)
-      return accumulator + (quantity * value)
-    }, 0)
-
-    return {
-      products,
-      weeklyLabel: formatWeeklyLabel(latestBatchProducts),
-      weeklyPrice: currencyFormatter.format(weeklyTotal),
-    }
+    return { products }
   }, [query.data])
 
   return {
     ...query,
     ...normalizedData,
+    toggleStatus: toggleStatus.mutate,
+    isToggling: toggleStatus.isPending,
   }
 }

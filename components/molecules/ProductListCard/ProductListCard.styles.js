@@ -7,9 +7,6 @@ const styles = StyleSheet.create({
         alignItems: "center",
         paddingHorizontal: 12,
         paddingVertical: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: "#E8DBD5",
-        backgroundColor: "#F9EFEA",
     },
     info: {
         flexDirection: "row",
@@ -20,14 +17,20 @@ const styles = StyleSheet.create({
     },
     name: {
         color: "#161616",
-        fontSize: 27,
+        fontSize: 14,
         fontWeight: "500",
         flex: 1,
     },
+    nameInactive: {
+        color: "#A0A0A0",
+    },
     quantity: {
         color: "#111111",
-        fontSize: 27,
-        fontWeight: "700",
+        fontSize: 14,
+        fontWeight: "600",
+    },
+    quantityInactive: {
+        color: "#A0A0A0",
     },
 })
 

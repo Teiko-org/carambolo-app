@@ -1,17 +1,13 @@
 import PropTypes from "prop-types"
-import { Plus } from "lucide-react-native"
-import { Pressable, Text, View } from "react-native"
+import { ScrollView, Text, View } from "react-native"
 import ProductListCard from "../../molecules/ProductListCard/ProductListCard"
 import styles from "./ProductListContainer.styles"
 
 const ProductListContainer = ({
     title,
     products,
-    weeklyLabel,
-    weeklyPrice,
-    addButtonText,
-    onAddProduct,
     emptyMessage,
+    onToggleStatus,
 }) => {
     return (
         <View style={styles.card}>
@@ -19,27 +15,23 @@ const ProductListContainer = ({
                 <Text style={styles.headerText}>{title}</Text>
             </View>
 
-            {products.length === 0 ? (
-                <View style={styles.emptyState}>
-                    <Text style={styles.emptyStateText}>{emptyMessage}</Text>
-                </View>
-            ) : (
-                products.map((product, index) => (
-                    <ProductListCard key={`${product.name}-${index}`} name={product.name} quantity={product.quantity} />
-                ))
-            )}
-
-            <View style={styles.weeklyRow}>
-                <Text style={styles.weeklyText}>{weeklyLabel}</Text>
-                <Text style={styles.weeklyPrice}>{weeklyPrice}</Text>
-            </View>
-
-            <View style={styles.buttonWrapper}>
-                <Pressable style={styles.addButton} onPress={onAddProduct}>
-                    <Text style={styles.addButtonText}>{addButtonText}</Text>
-                    <Plus size={22} color="#000000" strokeWidth={2.4} />
-                </Pressable>
-            </View>
+            <ScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent}>
+                {products.length === 0 ? (
+                    <View style={styles.emptyState}>
+                        <Text style={styles.emptyStateText}>{emptyMessage}</Text>
+                    </View>
+                ) : (
+                    products.map((product, index) => (
+                        <ProductListCard
+                            key={`${product.name}-${index}`}
+                            name={product.name}
+                            quantity={product.quantity}
+                            isAtivo={product.isAtivo}
+                            onToggle={() => onToggleStatus(product)}
+                        />
+                    ))
+                )}
+            </ScrollView>
         </View>
     )
 }
@@ -50,23 +42,19 @@ ProductListContainer.propTypes = {
         PropTypes.shape({
             name: PropTypes.string.isRequired,
             quantity: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+            isAtivo: PropTypes.bool,
+            type: PropTypes.string,
         })
     ),
-    weeklyLabel: PropTypes.string,
-    weeklyPrice: PropTypes.string,
-    addButtonText: PropTypes.string,
-    onAddProduct: PropTypes.func,
     emptyMessage: PropTypes.string,
+    onToggleStatus: PropTypes.func,
 }
 
 ProductListContainer.defaultProps = {
     title: "Listagem de Produtos",
     products: [],
-    weeklyLabel: "Fornada da Semana",
-    weeklyPrice: "R$ 0,00",
-    addButtonText: "ADICIONAR NOVO PRODUTO",
-    onAddProduct: () => {},
     emptyMessage: "Nenhum produto encontrado.",
+    onToggleStatus: () => { },
 }
 
 export default ProductListContainer

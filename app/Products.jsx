@@ -1,17 +1,21 @@
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native"
+import { ActivityIndicator, Pressable, Text, View } from "react-native"
+import { Plus } from "lucide-react-native"
 import { useProducts } from "../hooks/useProducts"
 import ProductListContainer from "../components/organisms/ProductListContainer/ProductListContainer"
 
 const Products = () => {
 	const {
 		products,
-		weeklyLabel,
-		weeklyPrice,
 		isLoading,
 		isError,
 		refetch,
 		isRefetching,
+		toggleStatus,
 	} = useProducts()
+
+	const handleToggleStatus = ({ id, type, isAtivo }) => {
+		toggleStatus({ id, type, isAtivo: !isAtivo })
+	}
 
 	if (isLoading) {
 		return (
@@ -74,17 +78,38 @@ const Products = () => {
 	}
 
 	return (
-		<View style={{ flex: 1, paddingHorizontal: 15, paddingBottom: 20, backgroundColor: "#FFEEE7" }}>
-			<ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+		<View style={{ flex: 1, backgroundColor: "#FFEEE7" }}>
+			<View style={{ flex: 1, paddingHorizontal: 15, paddingTop: 10, paddingBottom: 10 }}>
 				<ProductListContainer
 					title="Listagem de Produtos"
 					products={products}
-					weeklyLabel={weeklyLabel}
-					weeklyPrice={weeklyPrice}
-					addButtonText="ADICIONAR NOVO PRODUTO"
 					emptyMessage="Nenhum produto cadastrado no momento."
+					onToggleStatus={handleToggleStatus}
 				/>
-			</ScrollView>
+			</View>
+
+			<View style={{ alignItems: "center", paddingVertical: 16, backgroundColor: "#FFEEE7" }}>
+				<Pressable
+					style={{
+						backgroundColor: "#C79D53",
+						borderWidth: 2,
+						borderColor: "#A47032",
+						borderRadius: 999,
+						flexDirection: "row",
+						alignItems: "center",
+						justifyContent: "center",
+						gap: 8,
+						paddingHorizontal: 18,
+						paddingVertical: 10,
+						width: "80%",
+					}}
+				>
+					<Text style={{ fontSize: 14, fontWeight: "600", color: "#000000" }}>
+						ADICIONAR NOVO PRODUTO
+					</Text>
+					<Plus size={18} color="#000000" strokeWidth={2.4} />
+				</Pressable>
+			</View>
 		</View>
 	)
 }
