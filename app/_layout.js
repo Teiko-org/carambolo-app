@@ -7,7 +7,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const queryClient = new QueryClient();
 
-const HIDE_CHROME_ROUTES = ["/Assistant"];
+const HIDE_CHROME_ROUTES = ["/Assistant", "/"];
+const HIDE_SIDEMENU_ROUTES = ["/Assistant"];
 
 export default function Layout() {
   const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
@@ -19,6 +20,7 @@ export default function Layout() {
   const [selected, setSelected] = useState("Dashboard");
 
   const hideChrome = HIDE_CHROME_ROUTES.includes(pathname);
+  const hideSideMenu = HIDE_SIDEMENU_ROUTES.includes(pathname);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -54,7 +56,7 @@ export default function Layout() {
 
         <Slot />
 
-        {!hideChrome && (
+        {!hideSideMenu && (
           <View
             style={{
               position: "absolute",

@@ -17,26 +17,21 @@ import caramboloImage from "../assets/carambolo.png";
 import bannerCarambolo from "../assets/bannerCarambolo.png";
 import bannerFornada from "../assets/bannerFornada.png";
 import dashboardImage from "../assets/dashboard.jpg";
-import fornadasImage from "../assets/fornadas.jpg";
 import fundoBolos from "../assets/fundoBolos.png";
-import historicoImage from "../assets/historico.jpg";
 import pedidosImage from "../assets/pedidos.jpg";
-import producaoImage from "../assets/producao.jpg";
 import produtosImage from "../assets/produtos.jpg";
 import { LinearGradient } from "expo-linear-gradient";
 import lupaImage from "../assets/lupa.png";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useFornada } from "../hooks/useFornada";
 
 const { width } = Dimensions.get("window");
 const CARD_SIZE = (width - 48) / 3;
 
 const NAV_ITEMS = [
-  { label: "Produtos",  route: "/produtos",  image: produtosImage  },
-  { label: "Pedidos",   route: "/pedidos",   image: pedidosImage   },
-  { label: "Produção",  route: "/producao",  image: producaoImage  },
-  { label: "Fornadas",  route: "/fornadas",  image: fornadasImage  },
-  { label: "Dashboard", route: "/dashboard", image: dashboardImage },
-  { label: "Histórico", route: "/historico", image: historicoImage },
+  { label: "Produtos", route: "/Products", image: produtosImage },
+  { label: "Pedidos", route: "/OrderKanban", image: pedidosImage },
+  { label: "Dashboard", route: "/Dashboard", image: dashboardImage },
 ];
 
 function NavCard({ label, image, onPress }) {
@@ -85,8 +80,27 @@ NavCard.propTypes = {
   onPress: PropTypes.func.isRequired,
 };
 
+const pad = (n) => String(n).padStart(2, "0");
+
+function TimerBlock({ value, label }) {
+  return (
+    <View style={timerStyles.block}>
+      <View style={timerStyles.digitBox}>
+        <Text style={timerStyles.digit}>{pad(value)}</Text>
+      </View>
+      <Text style={timerStyles.label}>{label}</Text>
+    </View>
+  );
+}
+
+TimerBlock.propTypes = {
+  value: PropTypes.number.isRequired,
+  label: PropTypes.string.isRequired,
+};
+
 export default function HomeScreen() {
   const router = useRouter();
+  const { timeLeft } = useFornada();
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
@@ -141,7 +155,17 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.countdownBannerWrap}>
-          <Image source={bannerFornada} style={styles.countdownBannerImage} resizeMode="contain" />
+          <Image source={bannerFornada} style={styles.countdownBannerImage} resizeMode="cover" />
+          {timeLeft && !timeLeft.expired && (
+            <View style={timerStyles.overlay}>
+              <TimerBlock value={timeLeft.days} label="DIAS" />
+            </View>
+          )}
+          {timeLeft?.expired && (
+            <View style={timerStyles.overlay}>
+              <Text style={timerStyles.expiredText}>Encerrada</Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.sectionTitleWrap}>
@@ -163,13 +187,13 @@ export default function HomeScreen() {
   );
 }
 
-const NAVY       = "#0D1B3E";
-const GOLD       = "#C9A84C";
+const NAVY = "#0D1B3E";
+const GOLD = "#C9A84C";
 const GOLD_LIGHT = "#E8C97A";
-const GOLD_DIM   = "rgba(201,168,76,0.4)";
-const CREAM      = "#FFEEE7";
-const CREAM_DIM  = "#F5E0D0";
-const WHITE      = "#FFFFFF";
+const GOLD_DIM = "rgba(201,168,76,0.4)";
+const CREAM = "#FFEEE7";
+const CREAM_DIM = "#F5E0D0";
+const WHITE = "#FFFFFF";
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: CREAM },
@@ -284,17 +308,17 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   countdownBannerWrap: {
-    width: "100%",
-    alignItems: "center",
-    justifyContent: "center",
-    height: 72,
+    width: "90%",
+    alignSelf: "center",
     marginTop: 8,
     marginBottom: 4,
+    position: "relative",
+    height: 80,
   },
   countdownBannerImage: {
-    alignSelf: "center",
-    width: "90%",
-    height: 58,
+    width: "100%",
+    height: 80,
+    borderRadius: 6,
   },
   sectionTitleWrap: {
     marginHorizontal: 12,
@@ -355,5 +379,57 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "700",
     letterSpacing: 0.4,
+  },
+});
+
+const timerStyles = StyleSheet.create({
+  overlay: {
+    position: "absolute",
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: 64,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  block: {
+    alignItems: "center",
+  },
+  digitBox: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  digit: {
+    color: "#FFFFFF",
+    fontSize: 26,
+    fontWeight: "700",
+    fontVariant: ["tabular-nums"],
+    lineHeight: 30,
+  },
+  label: {
+    color: "#D4B076",
+    fontSize: 9,
+    fontWeight: "600",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    marginTop: 2,
+  },
+  colon: {
+    color: "#D4B076",
+    fontSize: 14,
+    fontWeight: "700",
+    marginBottom: 12,
+    lineHeight: 16,
+  },
+  expiredText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "600",
+    backgroundColor: "rgba(16,52,100,0.9)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: "#A47032",
   },
 });
