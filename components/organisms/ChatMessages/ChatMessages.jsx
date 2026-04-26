@@ -76,6 +76,7 @@ const ChatMessages = ({ messages, loading }) => {
       message={item.text}
       isBot={item.isBot}
       timestamp={item.timestamp}
+      attachments={item.attachments}
     />
   );
 
@@ -101,6 +102,7 @@ ChatMessages.propTypes = {
       text: PropTypes.string.isRequired,
       isBot: PropTypes.bool,
       timestamp: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+      attachments: PropTypes.array,
     })
   ).isRequired,
   loading: PropTypes.bool,

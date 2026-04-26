@@ -1,13 +1,12 @@
 import PropTypes from "prop-types"
-import { View, Text } from "react-native"
+import { View, Text, ScrollView } from "react-native"
 import styles from "./KanbanColumn.styles"
-import OrderCard from "../../molecules/OrderCard/OrderCard"
 
+const KANBAN_COLUMN_HEIGHT = 560
 
-const KanbanColumn = ({ title }) => {
+const KanbanColumn = ({ title, children }) => {
     return (
-        <View style={{ width: 280, height: "100%" }}>
-
+        <View style={{ width: 280, height: KANBAN_COLUMN_HEIGHT, flexShrink: 0 }}>
             <View style={styles.category}>
                 <Text style={styles.categoryText}>
                     {title}
@@ -15,40 +14,21 @@ const KanbanColumn = ({ title }) => {
             </View>
 
             <View style={styles.background}>
-                <View style={styles.container}>
-
-                    <OrderCard order={{
-                        name: "Raíne Neres Teixeira Jardim",
-                        phone: "+55 (11) 968090-282",
-                        type: "Retirada",
-                        price: "R$999,99"
-                    }} />
-
-                    <OrderCard order={{
-                        name: "Raíne Neres Teixeira Jardim",
-                        phone: "+55 (11) 968090-282",
-                        type: "Retirada",
-                        price: "R$999,99"
-                    }} />
-
-                    <OrderCard order={{
-                        name: "Raíne Neres Teixeira Jardim",
-                        phone: "+55 (11) 968090-282",
-                        type: "Retirada",
-                        price: "R$999,99"
-                    }} />
-
-                </View>
-
+                <ScrollView
+                    style={styles.container}
+                    contentContainerStyle={{ gap: 10 }}
+                    showsVerticalScrollIndicator={false}
+                >
+                    {children}
+                </ScrollView>
             </View>
-
-
         </View>
     )
 }
 
 KanbanColumn.propTypes = {
     title: PropTypes.string.isRequired,
+    children: PropTypes.node,
 }
 
 export default KanbanColumn

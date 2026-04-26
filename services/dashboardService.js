@@ -6,6 +6,7 @@ export const getPendingMassaOrders = async () => {
     return data
   } catch(e) {
     console.log("error getting massas pendentes: ", e)
+    throw e
   }
   
 };
@@ -16,6 +17,7 @@ export const getPendingRecheioOrders = async () => {
     return data
   } catch(e) {
     console.log("error getting recheios pendentes: ", e)
+    throw e
   }
   
 };
@@ -39,6 +41,7 @@ export const getMostOrdered = async ({ tipoItem, periodo, ano, mes } = {}) => {
     return data
   } catch(e) {
     console.log("error getting most ordered: ", e)
+    throw e
   }
 }
 
@@ -48,6 +51,7 @@ export const getBolosMaisPedidos = async () => {
     return data;
   } catch (e) {
     console.log("error getting bolos mais pedidos: ", e);
+    throw e;
   }
 };
 
@@ -57,5 +61,16 @@ export const getProdutosFornadasMaisPedidos = async () => {
     return data;
   } catch (e) {
     console.log("error getting produtos fornadas mais pedidos: ", e);
+    throw e;
+  }
+};
+
+export const getLastOrders = async () => {
+  try {
+    const { data } = await api.get("/dashboard/ultimosPedidos");
+    return data;
+  } catch (e) {
+    console.log("error getting ultimos pedidos: ", e);
+    throw e;
   }
 };

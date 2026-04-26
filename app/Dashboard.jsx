@@ -7,7 +7,43 @@ import { ClipboardList } from "lucide-react-native";
 import DashMostOrderedContainer from "../components/organisms/DashMostOrderedContainer/DashMostOrderedContainer";
 import DashTopCustomersContainer from "../components/organisms/DashTopCustomersContainer/DashTopCustomersContainer";
 import DashLastOrdersContainer from "../components/organisms/DashLastOrdersContainer/DashLastOrdersContainer";
-import { useMostOrederd, usePendingMassaOrders, usePendingRecheiosOrders } from "../hooks/useDashboard";
+import {
+    useLastOrders,
+    useMostOrederd,
+    usePendingMassaOrders,
+    usePendingRecheiosOrders,
+} from "../hooks/useDashboard";
+
+const currencyFormatter = new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+})
+
+const orderTypeLabelMap = {
+    RETIRADA: "Retirada",
+    ENTREGA: "Entrega",
+}
+
+const formatPhone = (phone) => {
+    const digits = String(phone ?? "").replace(/\D/g, "")
+
+    if (digits.length === 13) {
+        const countryCode = digits.slice(0, 2)
+        const areaCode = digits.slice(2, 4)
+        const firstPart = digits.slice(4, 9)
+        const secondPart = digits.slice(9, 13)
+        return `+${countryCode} (${areaCode}) ${firstPart}-${secondPart}`
+    }
+
+    if (digits.length === 11) {
+        const areaCode = digits.slice(0, 2)
+        const firstPart = digits.slice(2, 7)
+        const secondPart = digits.slice(7, 11)
+        return `(${areaCode}) ${firstPart}-${secondPart}`
+    }
+
+    return String(phone ?? "")
+}
 
 const Dashboard = () => {
     const [selectedTipoItem, setSelectedTipoItem] = useState("MASSA")
@@ -36,6 +72,10 @@ const Dashboard = () => {
         periodo: "MES",
         ano: Number(selectedAno),
     })
+
+    const {
+        data: lastOrdersData,
+    } = useLastOrders()
 
     const chartData = useMemo(() => {
         if (!Array.isArray(mostOrderedData)) {
@@ -70,15 +110,34 @@ const Dashboard = () => {
             }
         })
 
+        const normalizeLabel = (name) =>
+            name
+                .replace(/_/g, " ")
+                .replace(/\b\w/g, (c) => c.toUpperCase())
+
         return Array.from(aggregatedByMonth.values())
             .sort((a, b) => monthLabels.indexOf(a.label) - monthLabels.indexOf(b.label))
             .map((item, index) => ({
                 value: item.value,
                 label: item.label,
-                nomeItem: item.nomeItem,
+                nomeItem: normalizeLabel(item.nomeItem),
                 frontColor: index % 2 === 0 ? "#103464" : "#A47032",
             }))
     }, [mostOrderedData])
+
+    const formattedLastOrders = useMemo(() => {
+        if (!Array.isArray(lastOrdersData)) {
+            return []
+        }
+
+        return lastOrdersData.map((order) => ({
+            id: order?.id ?? `${order?.dataPedido}-${order?.nomeDoCliente}`,
+            name: order?.nomeDoCliente || "Cliente sem nome",
+            phone: formatPhone(order?.telefoneDoCliente),
+            type: orderTypeLabelMap[order?.tipoDoPedido] || order?.tipoDoPedido || "N/A",
+            price: currencyFormatter.format(Number(order?.valorPedido || 0)),
+        }))
+    }, [lastOrdersData])
 
     return (
         <View style={{ flex: 1, paddingHorizontal: 20, backgroundColor: "#FFEEE7" }}>
@@ -184,14 +243,7 @@ const Dashboard = () => {
                 <DashLastOrdersContainer
                     title={'Últimos Pedidos'}
                     subtitle={'Pedidos mais recentes'}
-                    orders={[
-                        {
-                            name: '',
-                            phone: '',
-                            type: '',
-
-                        }
-                    ]}
+                    orders={formattedLastOrders}
                 />
             </ScrollView>
         </View>

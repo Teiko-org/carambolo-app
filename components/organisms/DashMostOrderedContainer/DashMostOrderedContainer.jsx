@@ -90,7 +90,12 @@ const DashMostOrderedContainer = ({
                     />
                 </View>
             </View>
-            <ScrollView style={styles.cardsContainer}>
+            <ScrollView
+                style={styles.cardsContainer}
+                contentContainerStyle={styles.cardsContent}
+                showsVerticalScrollIndicator={true}
+                nestedScrollEnabled
+            >
                 {isLoading ? (
                     <Text>Carregando produtos mais pedidos...</Text>
                 ) : displayedOrders.length === 0 ? (

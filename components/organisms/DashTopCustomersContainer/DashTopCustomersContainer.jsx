@@ -19,10 +19,15 @@ const DashTopCustomersContainer = ({
                     {subtitle}
                 </Text>
             </View>
-            <ScrollView style={styles.cardsContainer}>
-                {customers.map((customer) => (
+            <ScrollView
+                style={styles.cardsContainer}
+                contentContainerStyle={styles.cardsContent}
+                showsVerticalScrollIndicator={true}
+                nestedScrollEnabled
+            >
+                {(customers || []).map((customer, index) => (
                     <CustomerCard
-                        key={customer.id}
+                        key={customer.id ?? index}
                         customerName={customer.nome}
                         customerTotalOrders={customer.pedidosTotais}
                         customerPhoneNumber={customer.telefone}

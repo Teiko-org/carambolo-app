@@ -1,15 +1,63 @@
 import PropTypes from "prop-types";
-import { Text, View } from "react-native";
+import { Text, View, TouchableOpacity, Linking, Platform } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { Download } from "lucide-react-native";
 import SparkleIcon from "../SparkleIcon/SparkleIcon";
 import { styles } from "./ChatBubble.styles";
 
-const ChatBubble = ({ message, isBot, timestamp }) => {
+const BACKEND_BASE_URL = "http://localhost:8080";
+
+const buildUrl = (endpoint) => {
+  if (!endpoint) return BACKEND_BASE_URL;
+  if (/^https?:\/\//i.test(endpoint)) return endpoint;
+  return `${BACKEND_BASE_URL}${endpoint.startsWith("/") ? "" : "/"}${endpoint}`;
+};
+
+const AttachmentButton = ({ attachment }) => {
+  const url = buildUrl(attachment.endpoint);
+
+  const handlePress = async () => {
+    try {
+      if (Platform.OS === "web") {
+        window.open(url, "_blank", "noopener,noreferrer");
+        return;
+      }
+      const supported = await Linking.canOpenURL(url);
+      if (supported) await Linking.openURL(url);
+    } catch {
+      void 0;
+    }
+  };
+
+  return (
+    <TouchableOpacity
+      style={styles.attachmentBtn}
+      onPress={handlePress}
+      activeOpacity={0.85}
+    >
+      <Download size={16} color="#103464" />
+      <Text style={styles.attachmentText}>{attachment.label}</Text>
+    </TouchableOpacity>
+  );
+};
+
+AttachmentButton.propTypes = {
+  attachment: PropTypes.shape({
+    type: PropTypes.string,
+    label: PropTypes.string.isRequired,
+    endpoint: PropTypes.string.isRequired,
+    filename: PropTypes.string,
+  }).isRequired,
+};
+
+const ChatBubble = ({ message, isBot, timestamp, attachments }) => {
   const formatTime = (ts) => {
     if (!ts) return "";
     const d = new Date(ts);
     return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
   };
+
+  const hasAttachments = isBot && Array.isArray(attachments) && attachments.length > 0;
 
   return (
     <View style={[styles.wrapper, isBot ? styles.wrapperBot : styles.wrapperUser]}>
@@ -26,6 +74,13 @@ const ChatBubble = ({ message, isBot, timestamp }) => {
           style={styles.bubbleBot}
         >
           <Text style={styles.textBot}>{message}</Text>
+          {hasAttachments && (
+            <View style={styles.attachmentsContainer}>
+              {attachments.map((att, idx) => (
+                <AttachmentButton key={`att-${idx}`} attachment={att} />
+              ))}
+            </View>
+          )}
         </LinearGradient>
       ) : (
         <View style={styles.bubbleUser}>
@@ -50,11 +105,20 @@ ChatBubble.propTypes = {
   message: PropTypes.string.isRequired,
   isBot: PropTypes.bool,
   timestamp: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  attachments: PropTypes.arrayOf(
+    PropTypes.shape({
+      type: PropTypes.string,
+      label: PropTypes.string.isRequired,
+      endpoint: PropTypes.string.isRequired,
+      filename: PropTypes.string,
+    })
+  ),
 };
 
 ChatBubble.defaultProps = {
   isBot: false,
   timestamp: null,
+  attachments: [],
 };
 
 export default ChatBubble;

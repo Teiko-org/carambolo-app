@@ -6,7 +6,7 @@ import Button from "../../atoms/Button/Button"
 const DashOrderCard = ({ title, ordersQuantity }) => {
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>{title}</Text>
+            <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">{title}</Text>
             <View style={styles.footer}>
                 <Button title="Ver pedidos" />
                 <Text>x{ordersQuantity} pedidos pendentes</Text>

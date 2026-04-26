@@ -88,6 +88,7 @@ export default function Assistant() {
                 text: data.answer,
                 isBot: true,
                 timestamp: Date.now(),
+                attachments: data.attachments || [],
               };
 
               setMessages((p) => {
