@@ -70,7 +70,7 @@ export default function Layout() {
 
         <Modal
           visible={isSideMenuOpen}
-          animationType="slide"
+          animationType="none"
           transparent={true}
           onRequestClose={closeSideMenu}
         >

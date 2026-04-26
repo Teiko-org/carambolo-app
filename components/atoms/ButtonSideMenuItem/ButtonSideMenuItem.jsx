@@ -1,7 +1,7 @@
-import PropTypes from "prop-types"
-import styles from "./ButtonSideMenuItem.styles"
-import { Link } from "expo-router"
-// import { MdOutlineSpaceDashboard } from "react-icons/md";
+import PropTypes from "prop-types";
+import { Pressable, Text } from "react-native";
+import { useRouter } from "expo-router";
+import styles from "./ButtonSideMenuItem.styles";
 
 const ButtonSideMenuItem = ({
     icon = null,
@@ -10,28 +10,31 @@ const ButtonSideMenuItem = ({
     setSelected,
     exit = false,
     route = "",
+    compact = false,
+    isAssistantCta = false,
 }) => {
-    const handleSelect = () => {
-        setSelected(text)
-    }
+    const router = useRouter();
+
+    const handlePress = () => {
+        setSelected(text);
+
+        if (route && route !== "#") {
+            router.push(route);
+        }
+    };
 
     return (
-        <Link
-            style={
-                exit
-                    ? styles(selected, exit).buttonExit
-                    : styles(selected, exit).buttonSelected
-            }
-            onPress={handleSelect}
-            href={`/${route}`}
+        <Pressable
+            onPress={handlePress}
+            style={styles(selected, exit, compact, isAssistantCta).button}
         >
-            {/* <MdOutlineSpaceDashboard /> */}
-
             {icon}
-            {text}
-        </Link>
-    )
-}
+            <Text style={styles(selected, exit, compact, isAssistantCta).text}>
+                {text}
+            </Text>
+        </Pressable>
+    );
+};
 
 ButtonSideMenuItem.propTypes = {
     icon: PropTypes.node,
@@ -40,6 +43,8 @@ ButtonSideMenuItem.propTypes = {
     setSelected: PropTypes.func.isRequired,
     exit: PropTypes.bool,
     route: PropTypes.string,
-}
+    compact: PropTypes.bool,
+    isAssistantCta: PropTypes.bool,
+};
 
-export default ButtonSideMenuItem
+export default ButtonSideMenuItem;
