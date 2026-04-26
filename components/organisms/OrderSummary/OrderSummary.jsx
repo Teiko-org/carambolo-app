@@ -2,7 +2,13 @@ import PropTypes from "prop-types"
 import { Pressable, ScrollView, Text, View } from "react-native"
 import styles from "./OrderSummary.styles"
 
-const OrderSummary = ({ onClose }) => {
+const formatDate = (dateString) => {
+    if (!dateString) return "";
+    const [year, month, day] = dateString.split("-");
+    return `${day}/${month}/${year}`;
+};
+
+const OrderSummary = ({ onClose, order }) => {
 
     return (
 
@@ -23,7 +29,7 @@ const OrderSummary = ({ onClose }) => {
                     {/* <Text style={{ color: "white", textAlign: "center" }}>Fechar</Text> */}
                 </Pressable>
 
-                <Text style={styles.headerTitle}>Número do Pedido: 9999999</Text>
+                <Text style={styles.headerTitle}>Número do Pedido: {order?.id}</Text>
 
                 <Text style={styles.headerText}>Bolo de Cenoura c/ cobertura de Chocolate</Text>
 
@@ -36,13 +42,13 @@ const OrderSummary = ({ onClose }) => {
                     <Text style={styles.title}>Montagem</Text>
 
                     <View style={{ flexDirection: "row", gap: 20, width: "90%", flexWrap: "wrap" }}>
-                        <Text style={styles.label}>Tamanho: <Text style={styles.data}>13cm</Text></Text>
+                        <Text style={styles.label}>Tamanho: <Text style={styles.data}>{order?.bolo?.tamanho}</Text></Text>
 
-                        <Text style={styles.label}>Formato: <Text style={styles.data}>Redondo</Text></Text>
+                        <Text style={styles.label}>Formato: <Text style={styles.data}>{order?.bolo?.formato}</Text></Text>
 
-                        <Text style={styles.label}>Massa: <Text style={styles.data}>Red-Velvet</Text></Text>
+                        <Text style={styles.label}>Massa: <Text style={styles.data}>{order?.bolo?.massa?.sabor}</Text></Text>
 
-                        <Text style={[styles.label, { width: "40%" }]}>Recheio: <Text style={styles.data}>Brigadeiro de Pistache com Redução de Frutas Vermelhas</Text></Text>
+                        <Text style={[styles.label, { width: "40%" }]}>Recheio: <Text style={styles.data}>{order?.bolo?.recheioPedido?.sabor1} e {order?.bolo?.recheioPedido?.sabor2}</Text></Text>
                     </View>
 
                 </View>
@@ -56,7 +62,7 @@ const OrderSummary = ({ onClose }) => {
 
                         <Text style={[styles.label, { paddingTop: 20 }]}>Observações</Text>
 
-                        <Text style={styles.data}>Sem lactose</Text>
+                        <Text style={styles.data}>{order?.observacao}</Text>
 
                     </View>
 
@@ -78,9 +84,9 @@ const OrderSummary = ({ onClose }) => {
 
                     <View style={{ flexDirection: "row", gap: 20, flexWrap: "wrap" }}>
 
-                        <Text style={styles.label}>O pedido será: <Text style={styles.data}>Entrega</Text></Text>
+                        <Text style={styles.label}>O pedido será: <Text style={styles.data}>{order?.tipoEntrega === "ENTREGA" ? "Entrega" : "Retirada"}</Text></Text>
 
-                        <Text style={styles.label}>Data: <Text style={styles.data}>15/03/2026</Text></Text>
+                        <Text style={styles.label}>Data: <Text style={styles.data}>{formatDate(order?.dataPrevisaoEntrega)}</Text></Text>
 
                     </View>
 
@@ -90,9 +96,9 @@ const OrderSummary = ({ onClose }) => {
 
                         <View style={{ gap: 10 }}>
 
-                            <Text style={styles.label}>Nome do solicitante: <Text style={styles.data}>Murilo Do Nascimento Barros</Text></Text>
+                            <Text style={styles.label}>Nome do solicitante: <Text style={styles.data}>{order?.nomeCliente}</Text></Text>
 
-                            <Text style={styles.label}>Telefone: <Text style={styles.data}> (11) 99999-9999</Text></Text>
+                            <Text style={styles.label}>Telefone: <Text style={styles.data}>{order?.telefoneCliente}</Text></Text>
 
                         </View>
 
@@ -106,37 +112,37 @@ const OrderSummary = ({ onClose }) => {
 
                             <View>
                                 <Text style={styles.label}>CEP</Text>
-                                <Text style={styles.data}>01234-567</Text>
+                                <Text style={styles.data}>{order?.endereco?.cep}</Text>
                             </View>
 
                             <View>
                                 <Text style={styles.label}>Estado</Text>
-                                <Text style={styles.data}>SP</Text>
+                                <Text style={styles.data}>{order?.endereco?.estado}</Text>
                             </View>
 
                             <View>
                                 <Text style={styles.label}>Cidade</Text>
-                                <Text style={styles.data}>São Paulo</Text>
+                                <Text style={styles.data}>{order?.endereco?.cidade}</Text>
                             </View>
 
                             <View>
                                 <Text style={styles.label}>Bairro</Text>
-                                <Text style={styles.data}>Jardim Silva</Text>
+                                <Text style={styles.data}>{order?.endereco?.bairro}</Text>
                             </View>
 
                             <View>
                                 <Text style={styles.label}>Rua</Text>
-                                <Text style={[styles.data, { width: "70%" }]}>Rua Antônio Marques Silva</Text>
+                                <Text style={[styles.data, { width: "70%" }]}>{order?.endereco?.logradouro}</Text>
                             </View>
 
                             <View>
                                 <Text style={styles.label}>Número</Text>
-                                <Text style={styles.data}>123</Text>
+                                <Text style={styles.data}>{order?.endereco?.numero}</Text>
                             </View>
 
                             <View>
                                 <Text style={styles.label}>Complemento</Text>
-                                <Text style={styles.data}>Apto 101</Text>
+                                <Text style={styles.data}>{order?.endereco?.complemento || "N/A"}</Text>
                             </View>
 
                         </View>
@@ -154,6 +160,7 @@ const OrderSummary = ({ onClose }) => {
 
 OrderSummary.propTypes = {
     onClose: PropTypes.func.isRequired,
+    order: PropTypes.object.isRequired,
 }
 
 export default OrderSummary
