@@ -1,7 +1,7 @@
 import PropTypes from "prop-types"
+import { Text } from "react-native"
 import styles from "./ButtonSideMenuItem.styles"
 import { Link } from "expo-router"
-// import { MdOutlineSpaceDashboard } from "react-icons/md";
 
 const ButtonSideMenuItem = ({
     icon = null,
@@ -25,10 +25,9 @@ const ButtonSideMenuItem = ({
             onPress={handleSelect}
             href={`/${route}`}
         >
-            {/* <MdOutlineSpaceDashboard /> */}
-
-            {icon}
-            {text}
+            <Text style={exit ? styles(selected, exit).buttonExitText : styles(selected, exit).buttonText}>
+                {icon}{text}
+            </Text>
         </Link>
     )
 }

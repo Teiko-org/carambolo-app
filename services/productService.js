@@ -58,3 +58,59 @@ export const updateBoloStatus = async (id, isAtivo) => {
     throw e
   }
 }
+
+export const createFornada = async ({ produto, descricao, valor, categoria }) => {
+  try {
+    const formData = new FormData()
+    formData.append("produto", produto)
+    formData.append("descricao", descricao)
+    formData.append("valor", valor)
+    formData.append("categoria", categoria)
+    const { data } = await api.post("/fornadas/produto-fornada", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    })
+    return data
+  } catch (e) {
+    console.log("error creating fornada: ", e)
+    throw e
+  }
+}
+
+export const getAdicionais = async () => {
+  try {
+    const { data } = await api.get("/adicionais")
+    return data
+  } catch (e) {
+    console.log("error getting adicionais: ", e)
+    throw e
+  }
+}
+
+export const getDecoracoes = async () => {
+  try {
+    const { data } = await api.get("/decoracoes")
+    return data
+  } catch (e) {
+    console.log("error getting decoracoes: ", e)
+    throw e
+  }
+}
+
+export const createDecoracao = async ({ nome, categoria, observacao, adicionais }) => {
+  try {
+    const formData = new FormData()
+    formData.append("nome", nome)
+    formData.append("observacao", observacao ?? "")
+    if (categoria) formData.append("categoria", categoria)
+    if (adicionais && adicionais.length > 0) {
+      formData.append("adicionais", adicionais.map((a) => a.id).join(","))
+    }
+    const { data } = await api.post("/decoracoes", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    })
+    return data
+  } catch (e) {
+    console.log("error creating decoracao: ", e)
+    throw e
+  }
+}

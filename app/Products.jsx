@@ -1,7 +1,10 @@
 import { ActivityIndicator, Pressable, Text, View } from "react-native"
+import { useState } from "react"
 import { Plus } from "lucide-react-native"
 import { useProducts } from "../hooks/useProducts"
 import ProductListContainer from "../components/organisms/ProductListContainer/ProductListContainer"
+import AddProductModal from "../components/organisms/AddProductModal/AddProductModal"
+import Toast from "../components/atoms/Toast/Toast"
 
 const Products = () => {
 	const {
@@ -15,6 +18,14 @@ const Products = () => {
 
 	const handleToggleStatus = ({ id, type, isAtivo }) => {
 		toggleStatus({ id, type, isAtivo: !isAtivo })
+	}
+
+	const [modalVisible, setModalVisible] = useState(false)
+	const [toastVisible, setToastVisible] = useState(false)
+
+	const showToast = () => {
+		setToastVisible(true)
+		setTimeout(() => setToastVisible(false), 3000)
 	}
 
 	if (isLoading) {
@@ -79,6 +90,8 @@ const Products = () => {
 
 	return (
 		<View style={{ flex: 1, backgroundColor: "#FFEEE7" }}>
+			<Toast visible={toastVisible} message="Produto cadastrado com sucesso!" />
+
 			<View style={{ flex: 1, paddingHorizontal: 15, paddingTop: 10, paddingBottom: 10 }}>
 				<ProductListContainer
 					title="Listagem de Produtos"
@@ -90,6 +103,7 @@ const Products = () => {
 
 			<View style={{ alignItems: "center", paddingVertical: 16, backgroundColor: "#FFEEE7" }}>
 				<Pressable
+					onPress={() => setModalVisible(true)}
 					style={{
 						backgroundColor: "#C79D53",
 						borderWidth: 2,
@@ -110,6 +124,12 @@ const Products = () => {
 					<Plus size={18} color="#000000" strokeWidth={2.4} />
 				</Pressable>
 			</View>
+
+			<AddProductModal
+				visible={modalVisible}
+				onClose={() => setModalVisible(false)}
+				onSuccess={showToast}
+			/>
 		</View>
 	)
 }

@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { View, ScrollView, ActivityIndicator, Text, Animated, PanResponder } from "react-native";
+import PropTypes from "prop-types";
+import { useQueryClient } from "@tanstack/react-query";
 import KanbanColumn from "../components/organisms/KanbanColumn/KanbanColumn";
 import OrderCard from "../components/molecules/OrderCard/OrderCard";
 import { useOrders } from "../hooks/useOrderKanban";
@@ -19,10 +21,11 @@ const formatDate = (dateString) => {
 };
 
 const normalizeOrder = (raw) => {
-  const id = raw?.id ?? raw?.bolo?.id ?? String(Math.random());
+  const id = raw?.id ?? String(Math.random());
 
   return {
     id,
+    resumoPedidoId: raw?.resumoPedidoId ?? null,
     status: raw?.status ?? "PENDENTE",
     name: raw?.nomeCliente ?? "Cliente",
     phone: raw?.telefoneCliente ?? "",
@@ -146,43 +149,46 @@ const DraggableOrderCard = ({
 
 const OrderKanban = () => {
   const { data, isLoading, isError, error } = useOrders();
-  const [orders, setOrders] = useState([]);
+  const queryClient = useQueryClient();
   const [isDraggingCard, setIsDraggingCard] = useState(false);
   const [draggingOrderId, setDraggingOrderId] = useState(null);
   const scrollRef = useRef(null);
   const scrollXRef = useRef(0);
   const viewportWidthRef = useRef(0);
-  const contentWidthRef = useRef(0);
   const columnLayoutsRef = useRef({});
   const [dragPreview, setDragPreview] = useState(null);
 
-  useEffect(() => {
-    if (Array.isArray(data)) {
-      setOrders(data.map(normalizeOrder));
-    }
+  // Derive orders directly from React Query cache — no separate useState
+  const orders = useMemo(() => {
+    if (!Array.isArray(data)) return [];
+    return data.map(normalizeOrder);
   }, [data]);
 
   const handleDrop = async (orderId, newStatus) => {
-    let previousStatus = null;
+    // Find the resumoPedidoId for the API call
+    const order = orders.find((o) => o.id === orderId);
+    const resumoPedidoId = order?.resumoPedidoId;
 
-    setOrders((prev) =>
-      prev.map((order) => {
-        if (order.id !== orderId) return order;
-        previousStatus = order.status;
-        return { ...order, status: newStatus };
-      })
-    );
+    if (!resumoPedidoId) {
+      console.warn("resumoPedidoId não encontrado para o pedido:", orderId);
+      return;
+    }
+
+    // Optimistically update the React Query cache directly
+    queryClient.setQueryData(["orders"], (prev) => {
+      if (!Array.isArray(prev)) return prev;
+      return prev.map((raw) => {
+        const id = raw?.id;
+        if (id !== orderId) return raw;
+        return { ...raw, status: newStatus };
+      });
+    });
 
     try {
-      await updateOrderStatus(orderId, newStatus);
+      await updateOrderStatus(resumoPedidoId, newStatus);
     } catch (e) {
-      if (previousStatus) {
-        setOrders((prev) =>
-          prev.map((order) =>
-            order.id === orderId ? { ...order, status: previousStatus } : order
-          )
-        );
-      }
+      // On failure, refetch to restore correct server state
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
       console.warn("Falha ao atualizar status no backend:", e);
     }
   };
@@ -210,14 +216,14 @@ const OrderKanban = () => {
   };
 
   const handleDragMove = (moveX) => {
-    if (!isDraggingCard || viewportWidthRef.current <= 0) return;
+    if (!isDraggingCard || !scrollRef.current) return;
 
     const EDGE_THRESHOLD = 110;
     const MIN_SCROLL_STEP = 2;
     const MAX_SCROLL_STEP = 7;
 
     const leftDistance = moveX;
-    const rightDistance = viewportWidthRef.current - moveX;
+    const rightDistance = (viewportWidthRef.current > 0 ? viewportWidthRef.current : 400) - moveX;
     const isNearLeft = leftDistance < EDGE_THRESHOLD;
     const isNearRight = rightDistance < EDGE_THRESHOLD;
 
@@ -231,13 +237,19 @@ const OrderKanban = () => {
     const scrollStep =
       MIN_SCROLL_STEP + (MAX_SCROLL_STEP - MIN_SCROLL_STEP) * normalizedProximity;
 
-    const maxScroll = Math.max(contentWidthRef.current - viewportWidthRef.current, 0);
     const nextScroll = isNearLeft
       ? Math.max(scrollXRef.current - scrollStep, 0)
-      : Math.min(scrollXRef.current + scrollStep, maxScroll);
+      : scrollXRef.current + scrollStep;
 
     if (nextScroll !== scrollXRef.current) {
-      scrollRef.current?.scrollTo({ x: nextScroll, animated: false });
+      // Use getScrollableNode to bypass the responder system and avoid
+      // the "ScrollView doesn't take rejection well" warning
+      const node = scrollRef.current.getScrollableNode?.();
+      if (node && node.scrollTo) {
+        node.scrollTo({ x: nextScroll, animated: false });
+      } else {
+        scrollRef.current.scrollTo({ x: nextScroll, animated: false });
+      }
       scrollXRef.current = nextScroll;
     }
   };
@@ -325,9 +337,6 @@ const OrderKanban = () => {
         onLayout={(event) => {
           viewportWidthRef.current = event.nativeEvent.layout.width;
         }}
-        onContentSizeChange={(contentWidth) => {
-          contentWidthRef.current = contentWidth;
-        }}
         onScroll={(event) => {
           scrollXRef.current = event.nativeEvent.contentOffset.x;
         }}
@@ -405,4 +414,21 @@ const OrderKanban = () => {
 };
 
 export default OrderKanban;
+
+DraggableOrderCard.propTypes = {
+  order: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    dataPrevisaoEntrega: PropTypes.string,
+  }).isRequired,
+  columnIndex: PropTypes.number.isRequired,
+  columnsLength: PropTypes.number.isRequired,
+  onDrop: PropTypes.func.isRequired,
+  onDragStateChange: PropTypes.func.isRequired,
+  onDragMove: PropTypes.func.isRequired,
+  getCurrentScrollX: PropTypes.func.isRequired,
+  resolveTargetStatusFromMoveX: PropTypes.func.isRequired,
+  onDragPreviewStart: PropTypes.func.isRequired,
+  onDragPreviewMove: PropTypes.func.isRequired,
+  onDragPreviewEnd: PropTypes.func.isRequired,
+};
 
