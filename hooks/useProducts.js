@@ -1,7 +1,9 @@
 import { useMemo } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import api from "../services/api/api"
 import {
   getCakeProducts,
+  getDecoracoes,
   getLatestBatchProducts,
   getProducts,
   updateBoloStatus,
@@ -14,12 +16,13 @@ export const useProducts = () => {
   const query = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
-      const [productsResponse, latestBatchProducts, cakeProducts] = await Promise.all([
+      const [productsResponse, latestBatchProducts, cakeProducts, decoracoes] = await Promise.all([
         getProducts(),
         getLatestBatchProducts(),
         getCakeProducts(),
+        getDecoracoes(),
       ])
-      return { productsPage: productsResponse, latestBatchProducts, cakeProducts }
+      return { productsPage: productsResponse, latestBatchProducts, cakeProducts, decoracoes }
     },
   })
 
@@ -27,6 +30,9 @@ export const useProducts = () => {
     mutationFn: async ({ id, type, isAtivo }) => {
       if (type === "bolo") {
         await updateBoloStatus(id, isAtivo)
+      } else if (type === "decoracao") {
+        // Decorações use the same endpoint pattern as bolos
+        await api.patch(`/decoracoes/atualizar-status/${id}`, { isAtivo })
       } else {
         await updateFornadaStatus(id, isAtivo)
       }
@@ -44,6 +50,13 @@ export const useProducts = () => {
             ...old,
             cakeProducts: old.cakeProducts.map((item) =>
               item?.boloId === id ? { ...item, ativo: isAtivo } : item
+            ),
+          }
+        } else if (type === "decoracao") {
+          return {
+            ...old,
+            decoracoes: old.decoracoes.map((item) =>
+              item?.id === id ? { ...item, isAtivo } : item
             ),
           }
         } else {
@@ -81,6 +94,10 @@ export const useProducts = () => {
       ? query.data.cakeProducts
       : []
 
+    const decoracoes = Array.isArray(query.data?.decoracoes)
+      ? query.data.decoracoes
+      : []
+
     const latestBatchByProductId = new Map(
       latestBatchProducts.map((item) => [item?.id, item])
     )
@@ -110,7 +127,18 @@ export const useProducts = () => {
       type: "bolo",
     }))
 
-    const products = [...fornadaProducts, ...bolosProducts]
+    const decoracoesProducts = decoracoes.map((item) => ({
+      id: item?.id,
+      name: item?.nome ?? "Decoração sem nome",
+      quantity: "-",
+      price: 0,
+      categoria: item?.categoria ?? "",
+      descricao: item?.observacao ?? "",
+      isAtivo: item?.isAtivo ?? true,
+      type: "decoracao",
+    }))
+
+    const products = [...fornadaProducts, ...bolosProducts, ...decoracoesProducts]
       .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"))
 
     return { products }

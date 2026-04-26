@@ -50,4 +50,5 @@ if (__DEV__) {
   console.log("[API] baseURL:", api.defaults.baseURL);
 }
 
+export { getApiBaseUrl }
 export default api;

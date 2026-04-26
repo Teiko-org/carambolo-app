@@ -12,10 +12,8 @@ const PANEL_WIDTH = screenWidth * 0.72;
 
 const NAV_ITEMS = [
     { text: "Home", route: "/", selectedKey: "Home" },
-    { text: "Produção", route: "/producao", selectedKey: "Produção" },
     { text: "Pedidos", route: "/OrderKanban", selectedKey: "Pedidos" },
     { text: "Produtos", route: "/Products", selectedKey: "Produtos" },
-    { text: "Fornadas", route: "#", selectedKey: "Fornadas" },
     { text: "Dashboard", route: "/Dashboard", selectedKey: "Dashboard" },
     {
         text: "Importar histórico de pedidos",
