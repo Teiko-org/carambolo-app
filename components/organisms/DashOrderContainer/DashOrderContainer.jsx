@@ -4,6 +4,17 @@ import DashOrderCard from "../../molecules/DashOrderCard/DashOrderCard"
 import Button from "../../atoms/Button/Button"
 import PropTypes from "prop-types"
 
+const formatOrderLabel = (value) => {
+    if (!value) {
+        return ""
+    }
+
+    return String(value)
+        .replace(/_/g, " ")
+        .toLowerCase()
+        .replace(/\b\w/g, (char) => char.toUpperCase())
+}
+
 const DashOrderContainer = ({
     title,
     orders,
@@ -44,12 +55,11 @@ const DashOrderContainer = ({
                 showsVerticalScrollIndicator={true}
                 nestedScrollEnabled
             >
-                {orders.map((order, index) => (
+                {(orders || []).map((order, index) => (
                     <DashOrderCard
                         key={index}
-                        title={order.title}
-                        ordersQuantity={order.ordersQuantity}
-                        ordersStatus={order.ordersStatus}
+                        title={formatOrderLabel(order.nomeMassa || order.nomeRecheio)}
+                        ordersQuantity={order.quantidade}
                     />
                 ))}
             </ScrollView>
@@ -93,7 +103,7 @@ DashOrderContainer.propTypes = {
 
 DashOrderContainer.defaultProps = {
     title: null,
-    cards: [],
+    orders: [],
     icon: null,
     shouldShowFooterButton: false,
     remainingOrders: 0,

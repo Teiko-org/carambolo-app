@@ -3,30 +3,48 @@ import { useEffect, useState } from "react"
 import styles from "./Select.styles"
 import { Dropdown } from "react-native-element-dropdown"
 
-const Select = ({ defaultValue, options }) => {
-    const [selectedValue, setSelectedValue] = useState(defaultValue)
+const Select = ({ defaultValue, options, selectedValue, setSelectedValue }) => {
+    const getNormalizedValue = (value) => {
+        if (value && typeof value === "object" && "value" in value) {
+            return value.value
+        }
+        return value
+    }
+
+    const [internalSelectedValue, setInternalSelectedValue] = useState(
+        getNormalizedValue(defaultValue)
+    )
+    const onSelectValueChange = setSelectedValue || setInternalSelectedValue
 
     useEffect(() => {
-        async function handleDefaultValue() {
-            await setSelectedValue(defaultValue)
+        function handleDefaultValue() {
+            const normalizedDefaultValue = getNormalizedValue(defaultValue)
+            onSelectValueChange(normalizedDefaultValue)
         }
         handleDefaultValue()
-    }, [])
+    }, [defaultValue, onSelectValueChange])
 
     return (
         <Dropdown
             data={options}
             labelField="label"
             valueField="value"
-            value={selectedValue}
-            onChange={(optionValue) => setSelectedValue(optionValue.value)}
+            value={selectedValue ?? internalSelectedValue}
+            onChange={(optionValue) => onSelectValueChange(optionValue.value)}
             style={styles.select}
         />
     )
 }
 
 Select.propTypes = {
-    defaultValue: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    defaultValue: PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.number,
+        PropTypes.shape({
+            label: PropTypes.string,
+            value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        }),
+    ]),
     options: PropTypes.arrayOf(
         PropTypes.shape({
             label: PropTypes.string.isRequired,
@@ -34,6 +52,8 @@ Select.propTypes = {
                 .isRequired,
         })
     ).isRequired,
+    selectedValue: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    setSelectedValue: PropTypes.func,
 }
 
 export default Select

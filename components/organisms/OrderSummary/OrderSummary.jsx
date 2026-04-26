@@ -6,7 +6,7 @@ const OrderSummary = ({ onClose }) => {
 
     return (
 
-        <View style={{ backgroundColor: "rgba(0, 0, 0, 0.75)", paddingTop: 100, flex: 1 }}>
+        <View style={{ backgroundColor: "rgba(0, 0, 0, 0.75)", flex: 1, justifyContent: "flex-end" }}>
 
             <Pressable
                 style={{

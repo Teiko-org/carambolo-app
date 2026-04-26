@@ -1,123 +1,78 @@
-import { Text, View } from 'react-native';
-import { BarChart } from 'react-native-gifted-charts';
+import PropTypes from "prop-types";
+import { Text, View } from "react-native";
 import styles from './MonthlyOrdersChart.styles';
 
-const MonthlyOrdersChart = () => {
-  const data = [
-    { 
-      value: 45,
-      label: 'Jan', 
-      frontColor: '#103464',
-      topLabelComponent: () => (
-        <Text>Cacau Expresso</Text>
-      ),
-    },
-    { 
-      value: 36, 
-      label: 'Fev', 
-      frontColor: '#A47032',
-      topLabelComponent: () => (
-        <Text>Cacau Expresso</Text>
-      ),
-    },
-    { 
-      value: 48, 
-      label: 'Mar', 
-      frontColor: '#103464',
-      topLabelComponent: () => (
-        <Text>Cacau Expresso</Text>
-      ),
-    },
-    { 
-      value: 42, 
-      label: 'Abr', 
-      frontColor: '#A47032',
-      topLabelComponent: () => (
-        <Text>Cacau Expresso</Text>
-      ),
-    },
-    { 
-      value: 45, 
-      label: 'Mai', 
-      frontColor: '#103464',
-      topLabelComponent: () => (
-        <Text>Cacau Expresso</Text>
-      ),
-    },
-    { 
-      value: 44, 
-      label: 'Jun', 
-      frontColor: '#A47032',
-      topLabelComponent: () => (
-        <Text>Cacau Expresso</Text>
-      ),
-    },{ 
-      value: 58, 
-      label: 'Jul', 
-      frontColor: '#103464',
-      topLabelComponent: () => (
-        <Text>Cacau Expresso</Text>
-      ),
-    },
-    { 
-      value: 22, 
-      label: 'Ago', 
-      frontColor: '#A47032',
-      topLabelComponent: () => (
-        <Text>Cacau Expresso</Text>
-      ),
-    },{ 
-      value: 45, 
-      label: 'Set', 
-      frontColor: '#103464',
-      topLabelComponent: () => (
-        <Text>Cacau Expresso</Text>
-      ),
-    },
-    { 
-      value: 52, 
-      label: 'Out', 
-      frontColor: '#A47032',
-      topLabelComponent: () => (
-        <Text>Cacau Expresso</Text>
-      ),
-    },{ 
-      value: 50, 
-      label: 'Nov', 
-      frontColor: '#103464',
-      topLabelComponent: () => (
-        <Text>Cacau Expresso</Text>
-      ),
-    },
-    { 
-      value: 45, 
-      label: 'Dez', 
-      frontColor: '#A47032',
-      topLabelComponent: () => (
-        <Text>Cacau Expresso</Text>
-      ),
-    },
-  ];
+const MonthlyOrdersChart = ({ data = [], isLoading, isError }) => {
+  if (isLoading) {
+    return (
+      <View>
+        <Text>Carregando dados do grafico...</Text>
+      </View>
+    );
+  }
+
+  if (isError) {
+    return (
+      <View>
+        <Text>Erro ao carregar dados do grafico.</Text>
+      </View>
+    );
+  }
+
+  if (!data.length) {
+    return (
+      <View>
+        <Text>Nenhum dado encontrado para os filtros selecionados.</Text>
+      </View>
+    );
+  }
+
+  const maxValue = Math.max(...data.map((item) => item.value), 1);
+  const normalizedData = data.map((item, index) => ({
+    ...item,
+    frontColor: item.frontColor || (index % 2 === 0 ? "#103464" : "#A47032"),
+  }));
+  const barMaxWidth = 190;
 
   return (
-    <View>
-      <BarChart
-        data={data}
-        horizontal={true}
-        barWidth={20}
-        barBorderTopRightRadius={100}
-        barBorderTopLeftRadius={100}
-        spacing={10}
-        xAxisType="numeric"
-        rulesColor={""}
-        width={300}
-        height={380}
-        topLabelContainerStyle={styles.topLabelContainerStyle}
-        backgroundColor={"#FFE7DD"}
-        maxValue={90}
-      />
+    <View style={styles.chartWrapper}>
+      <View style={styles.chartColumn}>
+        {normalizedData.map((item, index) => {
+          const ratio = Math.max(item.value / maxValue, 0.18);
+          const barWidth = ratio * barMaxWidth;
+
+          return (
+            <View key={`${item.label}-${index}`} style={styles.chartItem}>
+              <View style={styles.labelsRow}>
+                <Text style={styles.monthLabel}>{item.label}</Text>
+                <Text numberOfLines={1} ellipsizeMode="tail" style={styles.itemLabelText}>
+                  {item.nomeItem || ""}
+                </Text>
+              </View>
+
+              <View style={styles.metricsRow}>
+                <View style={[styles.bar, { width: barWidth, backgroundColor: item.frontColor }]} />
+                <Text style={styles.ordersCount}>{item.value} Pedidos</Text>
+              </View>
+            </View>
+          );
+        })}
+      </View>
     </View>
   );
+};
+
+MonthlyOrdersChart.propTypes = {
+  data: PropTypes.arrayOf(
+    PropTypes.shape({
+      value: PropTypes.number.isRequired,
+      label: PropTypes.string.isRequired,
+      nomeItem: PropTypes.string,
+      frontColor: PropTypes.string,
+    })
+  ),
+  isLoading: PropTypes.bool,
+  isError: PropTypes.bool,
 };
 
 export default MonthlyOrdersChart;

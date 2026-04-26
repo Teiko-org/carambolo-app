@@ -47,13 +47,19 @@ const SideMenu = ({ onClose, selected, setSelected }) => {
                             text="Produtos"
                             setSelected={setSelected}
                             selected={selected == "Produtos"}
-                            route="#"
+                            route="Products"
                         />
                         <ButtonSideMenuItem
                             text="Produção"
                             setSelected={setSelected}
                             selected={selected == "Produção"}
                             route="#"
+                        />
+                        <ButtonSideMenuItem
+                            text="Assistente"
+                            setSelected={setSelected}
+                            selected={selected == "Assistente"}
+                            route="Assistant"
                         />
                     </View>
                 </View>
