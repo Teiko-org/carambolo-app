@@ -4,6 +4,17 @@ import DashOrderCard from "../../molecules/DashOrderCard/DashOrderCard"
 import Button from "../../atoms/Button/Button"
 import PropTypes from "prop-types"
 
+const formatOrderLabel = (value) => {
+    if (!value) {
+        return ""
+    }
+
+    return String(value)
+        .replace(/_/g, " ")
+        .toLowerCase()
+        .replace(/\b\w/g, (char) => char.toUpperCase())
+}
+
 const DashOrderContainer = ({
     title,
     orders,
@@ -47,7 +58,7 @@ const DashOrderContainer = ({
                 {(orders || []).map((order, index) => (
                     <DashOrderCard
                         key={index}
-                        title={order.nomeMassa || order.nomeRecheio}
+                        title={formatOrderLabel(order.nomeMassa || order.nomeRecheio)}
                         ordersQuantity={order.quantidade}
                     />
                 ))}

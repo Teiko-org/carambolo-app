@@ -42,6 +42,10 @@ const styles = StyleSheet.create({
   cardsContainer: {
     padding: 12,
   },
+  cardsContent: {
+    gap: 10,
+    paddingBottom: 8,
+  },
   headerSubtitle: {
     fontSize: 16,
     color: "#FFFFFF",
