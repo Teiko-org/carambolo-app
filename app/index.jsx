@@ -30,41 +30,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const { width } = Dimensions.get("window");
 const CARD_SIZE = (width - 48) / 3;
 
-// ─── Dados dos cards de navegação ────────────────────────────
 const NAV_ITEMS = [
-  {
-    label: "PRODUTOS",
-    route: "/produtos",
-    image: produtosImage,
-  },
-  {
-    label: "PEDIDOS",
-    route: "/pedidos",
-    image: pedidosImage,
-  },
-  {
-    label: "PRODUÇÃO",
-    route: "/producao",
-    image: producaoImage,
-  },
-  {
-    label: "FORNADAS",
-    route: "/fornadas",
-    image: fornadasImage,
-  },
-  {
-    label: "DASHBOARD",
-    route: "/dashboard",
-    image: dashboardImage,
-  },
-  {
-    label: "HISTÓRICO",
-    route: "/historico",
-    image: historicoImage,
-  },
+  { label: "Produtos",  route: "/produtos",  image: produtosImage  },
+  { label: "Pedidos",   route: "/pedidos",   image: pedidosImage   },
+  { label: "Produção",  route: "/producao",  image: producaoImage  },
+  { label: "Fornadas",  route: "/fornadas",  image: fornadasImage  },
+  { label: "Dashboard", route: "/dashboard", image: dashboardImage },
+  { label: "Histórico", route: "/historico", image: historicoImage },
 ];
 
-// ─── Card de navegação ────────────────────────────────────────
 function NavCard({ label, image, onPress }) {
   const scale = useRef(new Animated.Value(1)).current;
 
@@ -90,9 +64,6 @@ function NavCard({ label, image, onPress }) {
       onPress={onPress}
     >
       <Animated.View style={[styles.navCard, { transform: [{ scale }] }]}>
-        {/* ── Área da imagem ──
-            Quando tiver as fotos reais, remova o placeholder abaixo
-            e descomente o <Image /> */}
         <View style={styles.navCardImagePlaceholder}>
           {image ? (
             <Image source={image} style={styles.navCardImage} resizeMode="cover" />
@@ -100,8 +71,6 @@ function NavCard({ label, image, onPress }) {
             <Text style={styles.navCardPlaceholderText}>🎂</Text>
           )}
         </View>
-
-        {/* ── Label ── */}
         <View style={styles.navCardLabelWrap}>
           <Text style={styles.navCardLabel}>{label}</Text>
         </View>
@@ -116,7 +85,6 @@ NavCard.propTypes = {
   onPress: PropTypes.func.isRequired,
 };
 
-// ─── HomeScreen ───────────────────────────────────────────────
 export default function HomeScreen() {
   const router = useRouter();
 
@@ -140,7 +108,6 @@ export default function HomeScreen() {
           />
         </LinearGradient>
 
-      {/* ── Barra de busca ── */}
         <View style={styles.searchWrap}>
           <View style={styles.searchBox}>
             <TextInput
@@ -152,19 +119,9 @@ export default function HomeScreen() {
           </View>
         </View>
 
-      {/* ── Banner Carambolo ── */}
         <View style={styles.kurokoBannerContainer}>
-          <Image
-            source={fundoBolos}
-            style={styles.fundoBolosImage}
-            resizeMode="cover"
-          />
-          <Image
-            source={bannerCarambolo}
-            style={styles.kurokoBannerImage}
-            resizeMode="contain"
-          />
-          
+          <Image source={fundoBolos} style={styles.fundoBolosImage} resizeMode="cover" />
+          <Image source={bannerCarambolo} style={styles.kurokoBannerImage} resizeMode="contain" />
           <View style={styles.kurokoTitleRow}>
             <Text style={styles.kurokoTitle}>Kuroko Assistant</Text>
           </View>
@@ -183,21 +140,14 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-      {/* ── Banner Fornadas ── */}
         <View style={styles.countdownBannerWrap}>
-          <Image
-            source={bannerFornada}
-            style={styles.countdownBannerImage}
-            resizeMode="contain"
-          />
+          <Image source={bannerFornada} style={styles.countdownBannerImage} resizeMode="contain" />
         </View>
 
-      {/* ── Título da seção ── */}
         <View style={styles.sectionTitleWrap}>
           <Text style={styles.sectionTitle}>O que deseja visualizar?</Text>
         </View>
 
-      {/* ── Grid de navegação ── */}
         <View style={styles.navGrid}>
           {NAV_ITEMS.map((item) => (
             <NavCard
@@ -213,20 +163,18 @@ export default function HomeScreen() {
   );
 }
 
-// ─── Estilos ──────────────────────────────────────────────────
-const NAVY      = "#0D1B3E";
-const GOLD      = "#C9A84C";
+const NAVY       = "#0D1B3E";
+const GOLD       = "#C9A84C";
 const GOLD_LIGHT = "#E8C97A";
-const GOLD_DIM  = "rgba(201,168,76,0.4)";
-const CREAM     = "#FFEEE7";
-const CREAM_DIM = "#F5E0D0";
-const WHITE     = "#FFFFFF";
+const GOLD_DIM   = "rgba(201,168,76,0.4)";
+const CREAM      = "#FFEEE7";
+const CREAM_DIM  = "#F5E0D0";
+const WHITE      = "#FFFFFF";
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: CREAM },
   scroll: { flex: 1, backgroundColor: CREAM },
   scrollContent: { paddingBottom: 32 },
-
   brandImageWrap: {
     alignItems: "center",
     justifyContent: "center",
@@ -240,8 +188,6 @@ const styles = StyleSheet.create({
     width: "130%",
     height: "100%",
   },
-
-  // ── Busca ──
   searchWrap: {
     backgroundColor: "#30344F",
     paddingHorizontal: 16,
@@ -273,36 +219,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   searchIconImage: { width: 18, height: 18 },
-
-  // ── Kuroko Banner ──
-  kurokoBanner: {
-    margin: 12,
-    backgroundColor: NAVY,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: GOLD,
-    flexDirection: "row",
-    alignItems: "center",
-    overflow: "hidden",
-    elevation: 5,
-    shadowColor: GOLD,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-  },
-  kurokoSide: {
-    width: 68,
-    alignSelf: "stretch",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(201,168,76,0.06)",
-  },
-  kurokoSideImage: {
-    width: 68,
-    height: "100%",
-  },
-  kurokoSideEmoji: { fontSize: 34 },
-  kurokoCenter: { flex: 1, alignItems: "center", paddingVertical: 18 },
   kurokoTitleRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -312,12 +228,6 @@ const styles = StyleSheet.create({
     width: "90%",
     zIndex: 2,
     justifyContent: "center",
-  },
-  kurokoLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: GOLD,
-    opacity: 0.5,
   },
   kurokoTitle: {
     color: GOLD_LIGHT,
@@ -353,20 +263,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 0.4,
   },
-  kurokoBtn: {
-    borderWidth: 1.5,
-    borderColor: GOLD,
-    borderRadius: 22,
-    paddingHorizontal: 26,
-    paddingVertical: 7,
-    backgroundColor: "rgba(201,168,76,0.12)",
-  },
-  kurokoBtnText: {
-    color: GOLD,
-    fontWeight: "700",
-    fontSize: 12,
-    letterSpacing: 2,
-  },
   kurokoBannerContainer: {
     alignItems: "center",
     justifyContent: "center",
@@ -387,8 +283,6 @@ const styles = StyleSheet.create({
     height: 200,
     zIndex: 1,
   },
-
-  // ── Banner Fornadas ──
   countdownBannerWrap: {
     width: "100%",
     alignItems: "center",
@@ -402,8 +296,6 @@ const styles = StyleSheet.create({
     width: "90%",
     height: 58,
   },
-
-  // ── Título seção ──
   sectionTitleWrap: {
     marginHorizontal: 12,
     marginTop: 18,
@@ -421,8 +313,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     letterSpacing: 0.4,
   },
-
-  // ── Grid ──
   navGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -462,8 +352,8 @@ const styles = StyleSheet.create({
   },
   navCardLabel: {
     color: GOLD_LIGHT,
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: "700",
-    letterSpacing: 1.5,
+    letterSpacing: 0.4,
   },
 });
