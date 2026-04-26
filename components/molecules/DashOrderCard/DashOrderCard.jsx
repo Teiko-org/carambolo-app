@@ -2,13 +2,16 @@ import PropTypes from "prop-types"
 import { Text, View } from "react-native"
 import { styles } from "./DashOrderCard.styles"
 import Button from "../../atoms/Button/Button"
+import { useRouter } from "expo-router"
 
 const DashOrderCard = ({ title, ordersQuantity }) => {
+    const router = useRouter()
+
     return (
         <View style={styles.container}>
             <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">{title}</Text>
             <View style={styles.footer}>
-                <Button title="Ver pedidos" />
+                <Button title="Ver pedidos" onPress={() => router.push("/OrderKanban")} />
                 <Text>x{ordersQuantity} pedidos pendentes</Text>
             </View>
         </View>

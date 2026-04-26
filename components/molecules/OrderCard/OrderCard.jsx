@@ -46,7 +46,7 @@ const OrderCard = ({ order, deliveryDate, orderId }) => {
 
             <Modal
                 visible={isOrderSummaryOpen}
-                animationType="slide"
+                animationType="none"
                 transparent={true}
                 onRequestClose={closeModal}
             >
