@@ -142,7 +142,11 @@ export default function HomeScreen() {
           <Text style={styles.kurokoSubtitle}>
             Fale para analisar os dados do{"\n"}seu negócio
           </Text>
-          <TouchableOpacity style={styles.kurokoCtaWrap} activeOpacity={0.85}>
+          <TouchableOpacity
+            style={styles.kurokoCtaWrap}
+            activeOpacity={0.85}
+            onPress={() => router.push("/Assistant")}
+          >
             <LinearGradient
               colors={["#A47032", "#D4B076"]}
               start={{ x: 0, y: 0 }}

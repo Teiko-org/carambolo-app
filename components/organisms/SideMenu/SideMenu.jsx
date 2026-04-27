@@ -94,6 +94,7 @@ const SideMenu = ({ onClose, selected, setSelected }) => {
                                     selected={selected == item.selectedKey}
                                     route={item.route}
                                     compact={item.compact}
+                                    onAfterPress={handleClose}
                                 />
                             ))}
                         </View>
@@ -114,6 +115,7 @@ const SideMenu = ({ onClose, selected, setSelected }) => {
                                     selected={selected == "Assistente"}
                                     route="/Assistant"
                                     isAssistantCta
+                                    onAfterPress={handleClose}
                                 />
                             </View>
 

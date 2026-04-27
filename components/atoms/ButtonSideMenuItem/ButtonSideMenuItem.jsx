@@ -12,6 +12,7 @@ const ButtonSideMenuItem = ({
     route = "",
     compact = false,
     isAssistantCta = false,
+    onAfterPress = null,
 }) => {
     const router = useRouter();
 
@@ -20,6 +21,10 @@ const ButtonSideMenuItem = ({
 
         if (route && route !== "#") {
             router.push(route);
+        }
+
+        if (onAfterPress) {
+            onAfterPress();
         }
     };
 
@@ -45,6 +50,7 @@ ButtonSideMenuItem.propTypes = {
     route: PropTypes.string,
     compact: PropTypes.bool,
     isAssistantCta: PropTypes.bool,
+    onAfterPress: PropTypes.func,
 };
 
 export default ButtonSideMenuItem;
