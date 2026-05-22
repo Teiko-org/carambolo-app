@@ -1,10 +1,18 @@
 import aiApi from "./api/aiApi";
 
-export const askQuestion = async (question, sessionId = null) => {
-  const { data } = await aiApi.post("/api/v1/ask", {
+export const askQuestion = async (
+  question,
+  sessionId = null,
+  confirmation = null
+) => {
+  const body = {
     question,
     session_id: sessionId,
-  });
+  };
+  if (confirmation) {
+    body.confirmation = confirmation;
+  }
+  const { data } = await aiApi.post("/api/v1/ask", body);
   return data;
 };
 
