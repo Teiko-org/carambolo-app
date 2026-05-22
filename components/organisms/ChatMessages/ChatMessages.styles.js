@@ -9,6 +9,10 @@ export const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: "flex-end",
   },
+  messageWrap: {
+    paddingHorizontal: 16,
+    marginBottom: 4,
+  },
   typingContainer: {
     flexDirection: "row",
     alignItems: "center",

@@ -2,6 +2,7 @@ import PropTypes from "prop-types";
 import { useRef, useEffect } from "react";
 import { FlatList, View, Text, Animated, Platform } from "react-native";
 import ChatBubble from "../../atoms/ChatBubble/ChatBubble";
+import ConfirmationActions from "../../molecules/ConfirmationActions/ConfirmationActions";
 import { styles } from "./ChatMessages.styles";
 
 const useNative = Platform.OS !== "web";
@@ -60,7 +61,7 @@ const TypingIndicator = () => (
   </View>
 );
 
-const ChatMessages = ({ messages, loading }) => {
+const ChatMessages = ({ messages, loading, onConfirmPending, onCancelPending }) => {
   const flatListRef = useRef(null);
 
   useEffect(() => {
@@ -72,12 +73,22 @@ const ChatMessages = ({ messages, loading }) => {
   }, [messages.length]);
 
   const renderItem = ({ item }) => (
-    <ChatBubble
-      message={item.text}
-      isBot={item.isBot}
-      timestamp={item.timestamp}
-      attachments={item.attachments}
-    />
+    <View style={styles.messageWrap}>
+      <ChatBubble
+        message={item.text}
+        isBot={item.isBot}
+        timestamp={item.timestamp}
+        attachments={item.attachments}
+      />
+      {item.isBot && item.pendingConfirmation ? (
+        <ConfirmationActions
+          pending={item.pendingConfirmation}
+          onConfirm={() => onConfirmPending?.(item)}
+          onCancel={() => onCancelPending?.(item)}
+          disabled={loading}
+        />
+      ) : null}
+    </View>
   );
 
   return (
@@ -103,13 +114,18 @@ ChatMessages.propTypes = {
       isBot: PropTypes.bool,
       timestamp: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       attachments: PropTypes.array,
+      pendingConfirmation: PropTypes.object,
     })
   ).isRequired,
   loading: PropTypes.bool,
+  onConfirmPending: PropTypes.func,
+  onCancelPending: PropTypes.func,
 };
 
 ChatMessages.defaultProps = {
   loading: false,
+  onConfirmPending: undefined,
+  onCancelPending: undefined,
 };
 
 export default ChatMessages;
