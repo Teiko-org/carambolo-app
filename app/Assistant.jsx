@@ -101,10 +101,16 @@ export default function Assistant() {
             onError: (err) => {
               const status = err?.response?.status;
               const detail = err?.response?.data?.detail;
+              const isTimeout =
+                err?.code === "ECONNABORTED" ||
+                /timeout/i.test(err?.message || "");
               let errorText =
                 "Desculpe, não consegui processar sua pergunta. Tente novamente.";
 
-              if (status === 429) {
+              if (isTimeout) {
+                errorText =
+                  "A resposta demorou mais que o esperado. Aguarde um pouco e tente de novo.";
+              } else if (status === 429) {
                 errorText =
                   "Estou com muitas solicitações no momento. Aguarde alguns segundos e tente novamente.";
               } else if (status === 400 && detail) {

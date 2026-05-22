@@ -20,36 +20,35 @@ const getExpoHost = () => {
   return host;
 };
 
-const getAiApiBaseUrl = () => {
-  const envUrl = process.env.EXPO_PUBLIC_AI_API_URL?.trim();
+const getEtlApiBaseUrl = () => {
+  const envUrl = process.env.EXPO_PUBLIC_ETL_API_URL?.trim();
   if (envUrl) {
     return envUrl;
   }
 
   const expoHost = getExpoHost();
   if (expoHost) {
-    return `http://${expoHost}:8000`;
+    return `http://${expoHost}:8001`;
   }
 
   if (Platform.OS === "android") {
-    return "http://10.0.2.2:8000";
+    return "http://10.0.2.2:8001";
   }
 
-  return "http://localhost:8000";
+  return "http://localhost:8001";
 };
 
-const AI_REQUEST_TIMEOUT_MS = 120000;
-
-const aiApi = axios.create({
-  baseURL: getAiApiBaseUrl(),
-  timeout: AI_REQUEST_TIMEOUT_MS,
+const etlApi = axios.create({
+  baseURL: getEtlApiBaseUrl(),
+  timeout: 120000, // 2 minutos — ETL pode demorar
   headers: {
-    "Content-Type": "application/json",
+    "Content-Type": "multipart/form-data",
   },
 });
 
 if (__DEV__) {
-  console.log("[AI API] baseURL:", aiApi.defaults.baseURL);
+  console.log("[ETL API] baseURL:", etlApi.defaults.baseURL);
 }
 
-export default aiApi;
+export { getEtlApiBaseUrl };
+export default etlApi;
