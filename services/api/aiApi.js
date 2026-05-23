@@ -21,6 +21,10 @@ const getExpoHost = () => {
 };
 
 const getAiApiBaseUrl = () => {
+  if (__DEV__ && Platform.OS === "web") {
+    return "http://localhost:8000";
+  }
+
   const envUrl = process.env.EXPO_PUBLIC_AI_API_URL?.trim();
   if (envUrl) {
     return envUrl;

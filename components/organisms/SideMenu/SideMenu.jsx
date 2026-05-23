@@ -1,5 +1,13 @@
 import PropTypes from "prop-types";
-import { Pressable, View, Image, Text, Animated, Dimensions } from "react-native";
+import {
+  Pressable,
+  View,
+  Image,
+  Text,
+  Animated,
+  Dimensions,
+  Platform,
+} from "react-native";
 import { useEffect, useRef, useState } from "react";
 import styles from "./SideMenu.styles";
 import ButtonSideMenuItem from "../../atoms/ButtonSideMenuItem/ButtonSideMenuItem";
@@ -9,6 +17,7 @@ import iconAssistent from "../../../assets/iconAssistent.png";
 
 const { width: screenWidth } = Dimensions.get("window");
 const PANEL_WIDTH = screenWidth * 0.72;
+const useNativeDriver = Platform.OS !== "web";
 
 const NAV_ITEMS = [
     { text: "Home", route: "/", selectedKey: "Home" },
@@ -34,12 +43,12 @@ const SideMenu = ({ onClose, selected, setSelected }) => {
             Animated.timing(slideX, {
                 toValue: 0,
                 duration: 220,
-                useNativeDriver: true,
+                useNativeDriver,
             }),
             Animated.timing(backdropOpacity, {
                 toValue: 1,
                 duration: 220,
-                useNativeDriver: true,
+                useNativeDriver,
             }),
         ]).start();
     }, [slideX]);
@@ -52,12 +61,12 @@ const SideMenu = ({ onClose, selected, setSelected }) => {
             Animated.timing(slideX, {
                 toValue: -PANEL_WIDTH,
                 duration: 320,
-                useNativeDriver: true,
+                useNativeDriver,
             }),
             Animated.timing(backdropOpacity, {
                 toValue: 0,
                 duration: 320,
-                useNativeDriver: true,
+                useNativeDriver,
             }),
         ]).start(() => {
             onClose();

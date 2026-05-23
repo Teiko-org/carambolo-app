@@ -27,6 +27,7 @@ export default function Assistant() {
   const [inputText, setInputText] = useState("");
   const [sessionId, setSessionId] = useState(null);
   const storageReady = useRef(false);
+  const [historyReady, setHistoryReady] = useState(false);
 
   const { loadChat, saveChat } = useChatStorage();
 
@@ -49,6 +50,7 @@ export default function Assistant() {
         setMessages([WELCOME_MESSAGE, ...stored.messages]);
       }
       storageReady.current = true;
+      setHistoryReady(true);
     })();
   }, [loadChat]);
 
@@ -274,6 +276,7 @@ export default function Assistant() {
       <ChatMessages
         messages={messages}
         loading={askMutation.isPending}
+        historyReady={historyReady}
         onConfirmPending={handleConfirmPending}
         onCancelPending={handleCancelPending}
       />

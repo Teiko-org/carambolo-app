@@ -21,6 +21,11 @@ const getExpoHost = () => {
 };
 
 const getApiBaseUrl = () => {
+  // Web dev: always hit local Java — avoids stale LAN IPs in .env / Metro cache.
+  if (__DEV__ && Platform.OS === "web") {
+    return "http://localhost:8080";
+  }
+
   const envUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
   if (envUrl) {
     return envUrl;
@@ -38,9 +43,11 @@ const getApiBaseUrl = () => {
   return "http://localhost:8080";
 };
 
+const API_REQUEST_TIMEOUT_MS = 30000;
+
 const api = axios.create({
   baseURL: getApiBaseUrl(),
-  timeout: 10000,
+  timeout: API_REQUEST_TIMEOUT_MS,
   headers: {
     "Content-Type": "application/json",
   },
