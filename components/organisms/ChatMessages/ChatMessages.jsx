@@ -1,5 +1,6 @@
 import PropTypes from "prop-types";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import { FlatList, View, Text, Animated, Platform } from "react-native";
 import ChatBubble from "../../atoms/ChatBubble/ChatBubble";
 import ConfirmationActions from "../../molecules/ConfirmationActions/ConfirmationActions";
@@ -61,16 +62,54 @@ const TypingIndicator = () => (
   </View>
 );
 
-const ChatMessages = ({ messages, loading, onConfirmPending, onCancelPending }) => {
+const ChatMessages = ({
+  messages,
+  loading,
+  onConfirmPending,
+  onCancelPending,
+  historyReady,
+}) => {
   const flatListRef = useRef(null);
+  const lastMessageId =
+    messages.length > 0 ? messages[messages.length - 1].id : null;
 
-  useEffect(() => {
-    if (flatListRef.current && messages.length > 0) {
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
-      }, 100);
+  const scrollToBottom = useCallback((animated = false) => {
+    const list = flatListRef.current;
+    if (!list || messages.length === 0) return;
+
+    const run = () => {
+      list.scrollToEnd({ animated });
+      if (Platform.OS === "web") {
+        list.scrollToOffset?.({ offset: 1e8, animated });
+      }
+    };
+
+    requestAnimationFrame(run);
+    if (Platform.OS === "web") {
+      setTimeout(run, 50);
+      setTimeout(run, 200);
     }
   }, [messages.length]);
+
+  useFocusEffect(
+    useCallback(() => {
+      scrollToBottom(false);
+    }, [scrollToBottom, lastMessageId])
+  );
+
+  useEffect(() => {
+    scrollToBottom(false);
+  }, [lastMessageId, scrollToBottom]);
+
+  useEffect(() => {
+    if (historyReady) {
+      scrollToBottom(false);
+    }
+  }, [historyReady, scrollToBottom]);
+
+  const handleContentSizeChange = useCallback(() => {
+    scrollToBottom(false);
+  }, [scrollToBottom]);
 
   const renderItem = ({ item }) => (
     <View style={styles.messageWrap}>
@@ -100,6 +139,7 @@ const ChatMessages = ({ messages, loading, onConfirmPending, onCancelPending }) 
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        onContentSizeChange={handleContentSizeChange}
       />
       {loading && <TypingIndicator />}
     </View>
@@ -120,12 +160,14 @@ ChatMessages.propTypes = {
   loading: PropTypes.bool,
   onConfirmPending: PropTypes.func,
   onCancelPending: PropTypes.func,
+  historyReady: PropTypes.bool,
 };
 
 ChatMessages.defaultProps = {
   loading: false,
   onConfirmPending: undefined,
   onCancelPending: undefined,
+  historyReady: false,
 };
 
 export default ChatMessages;
