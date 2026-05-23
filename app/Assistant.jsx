@@ -92,6 +92,7 @@ export default function Assistant() {
                 timestamp: Date.now(),
                 attachments: data.attachments || [],
                 pendingConfirmation: data.pending_confirmation || null,
+                feedback: null,
               };
 
               setMessages((p) => {
@@ -200,6 +201,7 @@ export default function Assistant() {
               timestamp: Date.now(),
               attachments: data.attachments || [],
               pendingConfirmation: null,
+              feedback: null,
             };
             setMessages((p) => {
               const withBot = [...p, botMsg];
@@ -224,6 +226,19 @@ export default function Assistant() {
       );
     },
     [askMutation, sessionId, persistMessages]
+  );
+
+  const handleMessageFeedback = useCallback(
+    (messageId, feedback) => {
+      setMessages((prev) => {
+        const updated = prev.map((m) =>
+          m.id === messageId ? { ...m, feedback: feedback || null } : m
+        );
+        persistMessages(updated, sessionId);
+        return updated;
+      });
+    },
+    [sessionId, persistMessages]
   );
 
   const handleCancelPending = useCallback((botMessage) => {
@@ -279,6 +294,7 @@ export default function Assistant() {
         historyReady={historyReady}
         onConfirmPending={handleConfirmPending}
         onCancelPending={handleCancelPending}
+        onMessageFeedback={handleMessageFeedback}
       />
 
       <PromptBar

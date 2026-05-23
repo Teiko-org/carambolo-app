@@ -4,6 +4,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { FlatList, View, Text, Animated, Platform } from "react-native";
 import ChatBubble from "../../atoms/ChatBubble/ChatBubble";
 import ConfirmationActions from "../../molecules/ConfirmationActions/ConfirmationActions";
+import MessageActions from "../../molecules/MessageActions/MessageActions";
 import { styles } from "./ChatMessages.styles";
 
 const useNative = Platform.OS !== "web";
@@ -67,6 +68,7 @@ const ChatMessages = ({
   loading,
   onConfirmPending,
   onCancelPending,
+  onMessageFeedback,
   historyReady,
 }) => {
   const flatListRef = useRef(null);
@@ -111,24 +113,39 @@ const ChatMessages = ({
     scrollToBottom(false);
   }, [scrollToBottom]);
 
-  const renderItem = ({ item }) => (
-    <View style={styles.messageWrap}>
-      <ChatBubble
-        message={item.text}
-        isBot={item.isBot}
-        timestamp={item.timestamp}
-        attachments={item.attachments}
-      />
-      {item.isBot && item.pendingConfirmation ? (
-        <ConfirmationActions
-          pending={item.pendingConfirmation}
-          onConfirm={() => onConfirmPending?.(item)}
-          onCancel={() => onCancelPending?.(item)}
-          disabled={loading}
+  const renderItem = ({ item }) => {
+    const showActions =
+      item.isBot && item.id !== "welcome" && !item.pendingConfirmation;
+
+    return (
+      <View style={styles.messageWrap}>
+        <ChatBubble
+          message={item.text}
+          isBot={item.isBot}
+          timestamp={item.timestamp}
+          attachments={item.attachments}
+          footer={
+            showActions ? (
+              <MessageActions
+                messageText={item.text}
+                feedback={item.feedback ?? null}
+                onFeedback={(value) => onMessageFeedback?.(item.id, value)}
+                disabled={loading}
+              />
+            ) : null
+          }
         />
-      ) : null}
-    </View>
-  );
+        {item.isBot && item.pendingConfirmation ? (
+          <ConfirmationActions
+            pending={item.pendingConfirmation}
+            onConfirm={() => onConfirmPending?.(item)}
+            onCancel={() => onCancelPending?.(item)}
+            disabled={loading}
+          />
+        ) : null}
+      </View>
+    );
+  };
 
   return (
     <View style={styles.list}>
@@ -155,11 +172,13 @@ ChatMessages.propTypes = {
       timestamp: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       attachments: PropTypes.array,
       pendingConfirmation: PropTypes.object,
+      feedback: PropTypes.oneOf(["up", "down", null]),
     })
   ).isRequired,
   loading: PropTypes.bool,
   onConfirmPending: PropTypes.func,
   onCancelPending: PropTypes.func,
+  onMessageFeedback: PropTypes.func,
   historyReady: PropTypes.bool,
 };
 
@@ -167,6 +186,7 @@ ChatMessages.defaultProps = {
   loading: false,
   onConfirmPending: undefined,
   onCancelPending: undefined,
+  onMessageFeedback: undefined,
   historyReady: false,
 };
 

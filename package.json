@@ -17,6 +17,7 @@
     "ajv": "^8.18.0",
     "axios": "^1.13.6",
     "expo": "~54.0.0",
+    "expo-clipboard": "~8.0.7",
     "expo-document-picker": "~14.0.8",
     "expo-linear-gradient": "~15.0.8",
     "expo-linking": "~8.0.11",
