@@ -8,6 +8,10 @@ export const styles = StyleSheet.create({
   wrapperBot: {
     alignItems: "flex-start",
   },
+  botColumn: {
+    alignSelf: "flex-start",
+    maxWidth: "85%",
+  },
   wrapperUser: {
     alignItems: "flex-end",
   },
@@ -17,7 +21,6 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#A47032",
     padding: 14,
-    maxWidth: "85%",
     overflow: "hidden",
   },
   bubbleUser: {
@@ -39,16 +42,30 @@ export const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 4,
+    width: "100%",
+    minHeight: 22,
+    paddingLeft: 2,
+  },
   timestamp: {
     fontSize: 11,
-    marginTop: 4,
     color: "#A47032",
   },
   timestampBot: {
     alignSelf: "flex-start",
   },
+  timestampBotStandalone: {
+    marginTop: 4,
+    alignSelf: "flex-start",
+    paddingLeft: 2,
+  },
   timestampUser: {
     alignSelf: "flex-end",
+    marginTop: 4,
   },
   avatar: {
     width: 24,

@@ -50,7 +50,7 @@ AttachmentButton.propTypes = {
   }).isRequired,
 };
 
-const ChatBubble = ({ message, isBot, timestamp, attachments }) => {
+const ChatBubble = ({ message, isBot, timestamp, attachments, footer }) => {
   const formatTime = (ts) => {
     if (!ts) return "";
     const d = new Date(ts);
@@ -61,41 +61,49 @@ const ChatBubble = ({ message, isBot, timestamp, attachments }) => {
 
   return (
     <View style={[styles.wrapper, isBot ? styles.wrapperBot : styles.wrapperUser]}>
-      {isBot && (
-        <View style={styles.avatar}>
-          <SparkleIcon size={14} color="#FFEEE7" />
-        </View>
-      )}
       {isBot ? (
-        <LinearGradient
-          colors={["#30344F", "#103464"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.bubbleBot}
-        >
-          <Text style={styles.textBot}>{message}</Text>
-          {hasAttachments && (
-            <View style={styles.attachmentsContainer}>
-              {attachments.map((att, idx) => (
-                <AttachmentButton key={`att-${idx}`} attachment={att} />
-              ))}
+        <View style={styles.botColumn}>
+          <View style={styles.avatar}>
+            <SparkleIcon size={14} color="#FFEEE7" />
+          </View>
+          <LinearGradient
+            colors={["#30344F", "#103464"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.bubbleBot}
+          >
+            <Text style={styles.textBot}>{message}</Text>
+            {hasAttachments && (
+              <View style={styles.attachmentsContainer}>
+                {attachments.map((att, idx) => (
+                  <AttachmentButton key={`att-${idx}`} attachment={att} />
+                ))}
+              </View>
+            )}
+          </LinearGradient>
+          {timestamp && footer ? (
+            <View style={styles.metaRow}>
+              <Text style={styles.timestamp}>{formatTime(timestamp)}</Text>
+              {footer}
             </View>
-          )}
-        </LinearGradient>
-      ) : (
-        <View style={styles.bubbleUser}>
-          <Text style={styles.textUser}>{message}</Text>
+          ) : null}
+          {timestamp && !footer ? (
+            <Text style={[styles.timestamp, styles.timestampBotStandalone]}>
+              {formatTime(timestamp)}
+            </Text>
+          ) : null}
         </View>
-      )}
-      {timestamp && (
-        <Text
-          style={[
-            styles.timestamp,
-            isBot ? styles.timestampBot : styles.timestampUser,
-          ]}
-        >
-          {formatTime(timestamp)}
-        </Text>
+      ) : (
+        <>
+          <View style={styles.bubbleUser}>
+            <Text style={styles.textUser}>{message}</Text>
+          </View>
+          {timestamp ? (
+            <Text style={[styles.timestamp, styles.timestampUser]}>
+              {formatTime(timestamp)}
+            </Text>
+          ) : null}
+        </>
       )}
     </View>
   );
@@ -113,12 +121,14 @@ ChatBubble.propTypes = {
       filename: PropTypes.string,
     })
   ),
+  footer: PropTypes.node,
 };
 
 ChatBubble.defaultProps = {
   isBot: false,
   timestamp: null,
   attachments: [],
+  footer: null,
 };
 
 export default ChatBubble;
