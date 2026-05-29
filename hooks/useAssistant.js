@@ -34,7 +34,8 @@ export const useSuggestedPrompts = () => {
 
 export const useAskQuestion = () => {
   return useMutation({
-    mutationFn: ({ question, sessionId }) => askQuestion(question, sessionId),
+    mutationFn: ({ question, sessionId, confirmation }) =>
+      askQuestion(question, sessionId, confirmation),
     retry: false,
   });
 };

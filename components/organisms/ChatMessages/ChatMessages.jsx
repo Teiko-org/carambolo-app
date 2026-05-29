@@ -1,7 +1,10 @@
 import PropTypes from "prop-types";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import { FlatList, View, Text, Animated, Platform } from "react-native";
 import ChatBubble from "../../atoms/ChatBubble/ChatBubble";
+import ConfirmationActions from "../../molecules/ConfirmationActions/ConfirmationActions";
+import MessageActions from "../../molecules/MessageActions/MessageActions";
 import { styles } from "./ChatMessages.styles";
 
 const useNative = Platform.OS !== "web";
@@ -60,25 +63,89 @@ const TypingIndicator = () => (
   </View>
 );
 
-const ChatMessages = ({ messages, loading }) => {
+const ChatMessages = ({
+  messages,
+  loading,
+  onConfirmPending,
+  onCancelPending,
+  onMessageFeedback,
+  historyReady,
+}) => {
   const flatListRef = useRef(null);
+  const lastMessageId =
+    messages.length > 0 ? messages[messages.length - 1].id : null;
 
-  useEffect(() => {
-    if (flatListRef.current && messages.length > 0) {
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
-      }, 100);
+  const scrollToBottom = useCallback((animated = false) => {
+    const list = flatListRef.current;
+    if (!list || messages.length === 0) return;
+
+    const run = () => {
+      list.scrollToEnd({ animated });
+      if (Platform.OS === "web") {
+        list.scrollToOffset?.({ offset: 1e8, animated });
+      }
+    };
+
+    requestAnimationFrame(run);
+    if (Platform.OS === "web") {
+      setTimeout(run, 50);
+      setTimeout(run, 200);
     }
   }, [messages.length]);
 
-  const renderItem = ({ item }) => (
-    <ChatBubble
-      message={item.text}
-      isBot={item.isBot}
-      timestamp={item.timestamp}
-      attachments={item.attachments}
-    />
+  useFocusEffect(
+    useCallback(() => {
+      scrollToBottom(false);
+    }, [scrollToBottom, lastMessageId])
   );
+
+  useEffect(() => {
+    scrollToBottom(false);
+  }, [lastMessageId, scrollToBottom]);
+
+  useEffect(() => {
+    if (historyReady) {
+      scrollToBottom(false);
+    }
+  }, [historyReady, scrollToBottom]);
+
+  const handleContentSizeChange = useCallback(() => {
+    scrollToBottom(false);
+  }, [scrollToBottom]);
+
+  const renderItem = ({ item }) => {
+    const showActions =
+      item.isBot && item.id !== "welcome" && !item.pendingConfirmation;
+
+    return (
+      <View style={styles.messageWrap}>
+        <ChatBubble
+          message={item.text}
+          isBot={item.isBot}
+          timestamp={item.timestamp}
+          attachments={item.attachments}
+          footer={
+            showActions ? (
+              <MessageActions
+                messageText={item.text}
+                feedback={item.feedback ?? null}
+                onFeedback={(value) => onMessageFeedback?.(item.id, value)}
+                disabled={loading}
+              />
+            ) : null
+          }
+        />
+        {item.isBot && item.pendingConfirmation ? (
+          <ConfirmationActions
+            pending={item.pendingConfirmation}
+            onConfirm={() => onConfirmPending?.(item)}
+            onCancel={() => onCancelPending?.(item)}
+            disabled={loading}
+          />
+        ) : null}
+      </View>
+    );
+  };
 
   return (
     <View style={styles.list}>
@@ -89,6 +156,7 @@ const ChatMessages = ({ messages, loading }) => {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        onContentSizeChange={handleContentSizeChange}
       />
       {loading && <TypingIndicator />}
     </View>
@@ -103,13 +171,23 @@ ChatMessages.propTypes = {
       isBot: PropTypes.bool,
       timestamp: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       attachments: PropTypes.array,
+      pendingConfirmation: PropTypes.object,
+      feedback: PropTypes.oneOf(["up", "down", null]),
     })
   ).isRequired,
   loading: PropTypes.bool,
+  onConfirmPending: PropTypes.func,
+  onCancelPending: PropTypes.func,
+  onMessageFeedback: PropTypes.func,
+  historyReady: PropTypes.bool,
 };
 
 ChatMessages.defaultProps = {
   loading: false,
+  onConfirmPending: undefined,
+  onCancelPending: undefined,
+  onMessageFeedback: undefined,
+  historyReady: false,
 };
 
 export default ChatMessages;

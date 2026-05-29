@@ -21,6 +21,10 @@ const getExpoHost = () => {
 };
 
 const getAiApiBaseUrl = () => {
+  if (__DEV__ && Platform.OS === "web") {
+    return "http://localhost:8000";
+  }
+
   const envUrl = process.env.EXPO_PUBLIC_AI_API_URL?.trim();
   if (envUrl) {
     return envUrl;
@@ -38,9 +42,11 @@ const getAiApiBaseUrl = () => {
   return "http://localhost:8000";
 };
 
+const AI_REQUEST_TIMEOUT_MS = 120000;
+
 const aiApi = axios.create({
   baseURL: getAiApiBaseUrl(),
-  timeout: 10000,
+  timeout: AI_REQUEST_TIMEOUT_MS,
   headers: {
     "Content-Type": "application/json",
   },
