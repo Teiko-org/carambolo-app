@@ -6,6 +6,7 @@ import KanbanColumn from "../components/organisms/KanbanColumn/KanbanColumn";
 import OrderCard from "../components/molecules/OrderCard/OrderCard";
 import { useOrders } from "../hooks/useOrderKanban";
 import { updateOrderStatus } from "../services/orderKanbanService";
+import { useOrderFilter } from "../contexts/orderFilterContext";
 
 const COLUMNS = [
   { key: "CANCELADO", title: "Pedidos Cancelados" },
@@ -148,7 +149,9 @@ const DraggableOrderCard = ({
 };
 
 const OrderKanban = () => {
-  const { data, isLoading, isError, error } = useOrders();
+  const { month, year } = useOrderFilter();
+  const ordersQueryKey = ["orders", month || null, year || null];
+  const { data, isLoading, isError, error } = useOrders({ month, year });
   const queryClient = useQueryClient();
   const [isDraggingCard, setIsDraggingCard] = useState(false);
   const [draggingOrderId, setDraggingOrderId] = useState(null);
@@ -175,7 +178,7 @@ const OrderKanban = () => {
     }
 
     // Optimistically update the React Query cache directly
-    queryClient.setQueryData(["orders"], (prev) => {
+    queryClient.setQueryData(ordersQueryKey, (prev) => {
       if (!Array.isArray(prev)) return prev;
       return prev.map((raw) => {
         const id = raw?.id;
@@ -188,7 +191,7 @@ const OrderKanban = () => {
       await updateOrderStatus(resumoPedidoId, newStatus);
     } catch (e) {
       // On failure, refetch to restore correct server state
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ordersQueryKey });
       console.warn("Falha ao atualizar status no backend:", e);
     }
   };

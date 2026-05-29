@@ -1,8 +1,21 @@
 import api from "./api/api";
 
-export const getOrders = async () => {
+export const getOrders = async ({ month, year } = {}) => {
   console.log("Buscando pedidos do back-end");
-  const { data } = await api.get("/bolos/pedido/completo");
+  const params = {};
+
+  if (year?.length === 4) {
+    params.ano = Number(year);
+  }
+
+  if (month?.length > 0) {
+    const monthNumber = Number(month);
+    if (monthNumber >= 1 && monthNumber <= 12) {
+      params.mes = monthNumber;
+    }
+  }
+
+  const { data } = await api.get("/bolos/pedido/completo", { params });
   console.log(data);
   return data;
 };
