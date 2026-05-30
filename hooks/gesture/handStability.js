@@ -1,11 +1,15 @@
-/** Evita falsos positivos quando a câmera treme ou o modelo “vê” mão fantasma. */
 export class HandStabilityGate {
-  constructor(onFrames, offFrames) {
+  constructor(onFrames = 1, offFrames = 15) {
     this.onFrames = onFrames;
     this.offFrames = offFrames;
     this.onCount = 0;
     this.offCount = 0;
     this.stable = false;
+  }
+
+  setThresholds(onFrames, offFrames) {
+    if (onFrames != null) this.onFrames = onFrames;
+    if (offFrames != null) this.offFrames = offFrames;
   }
 
   update(detected) {

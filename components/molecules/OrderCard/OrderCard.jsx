@@ -1,17 +1,33 @@
 import PropTypes from "prop-types"
-import { View, Text, Modal } from "react-native"
+import { View, Text, Modal, Pressable } from "react-native"
 import styles from "./OrderCard.styles"
 import Button from "../../atoms/Button/Button"
 import { useState } from "react";
 import OrderSummary from "../../organisms/OrderSummary/OrderSummary";
 
-const OrderCard = ({ order, deliveryDate, orderId }) => {
+const OrderCard = ({
+    order,
+    deliveryDate,
+    orderId,
+    isGestureMode,
+    onOpenDetails,
+}) => {
 
-    const [isOrderSummaryOpen, setIsOrderSummaryOpen] = useState(false);
+    const [localDetailsOpen, setLocalDetailsOpen] = useState(false);
 
-    const openModal = () => setIsOrderSummaryOpen(true);
+    const openModal = () => {
+        if (isGestureMode) {
+            onOpenDetails?.();
+            return;
+        }
+        setLocalDetailsOpen(true);
+    };
 
-    const closeModal = () => setIsOrderSummaryOpen(false);
+    const closeModal = () => setLocalDetailsOpen(false);
+
+    const detailsTriggerProps = isGestureMode
+        ? { dataSet: { orderDetailsTrigger: String(orderId) } }
+        : {};
 
     return (
         <View style={styles.container}>
@@ -40,18 +56,27 @@ const OrderCard = ({ order, deliveryDate, orderId }) => {
                     {order.price}
                 </Text>
 
-                <Button variant="secondary" title="Detalhes" size="small" onPress={openModal} />
+                <Pressable
+                    {...detailsTriggerProps}
+                    onPress={openModal}
+                    accessibilityRole="button"
+                    accessibilityLabel="Detalhes do pedido"
+                >
+                    <Button variant="secondary" title="Detalhes" size="small" onPress={openModal} />
+                </Pressable>
 
             </View>
 
-            <Modal
-                visible={isOrderSummaryOpen}
-                animationType="none"
-                transparent={true}
-                onRequestClose={closeModal}
-            >
-                <OrderSummary onClose={closeModal} order={order.raw} />
-            </Modal>
+            {!isGestureMode ? (
+                <Modal
+                    visible={localDetailsOpen}
+                    animationType="none"
+                    transparent={true}
+                    onRequestClose={closeModal}
+                >
+                    <OrderSummary onClose={closeModal} order={order.raw} />
+                </Modal>
+            ) : null}
 
         </View>
     )
@@ -68,6 +93,13 @@ OrderCard.propTypes = {
     }).isRequired,
     deliveryDate: PropTypes.string,
     orderId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    isGestureMode: PropTypes.bool,
+    onOpenDetails: PropTypes.func,
+}
+
+OrderCard.defaultProps = {
+    isGestureMode: false,
+    onOpenDetails: undefined,
 }
 
 export default OrderCard

@@ -18,7 +18,7 @@ const styles = StyleSheet.create({
     },
 
     background: {
-
+        position: "relative",
         backgroundColor: "#103464",
         width: "100%",
         height: "90%",
@@ -61,7 +61,40 @@ const styles = StyleSheet.create({
 
         padding: 10,
         paddingHorizontal: 20,
-    }
+    },
+
+    scrollFadeBottom: {
+        position: "absolute",
+        left: 2,
+        right: 2,
+        bottom: 2,
+        height: 44,
+        borderBottomLeftRadius: 8,
+        borderBottomRightRadius: 8,
+        alignItems: "center",
+        justifyContent: "flex-end",
+        paddingBottom: 6,
+        backgroundImage:
+            "linear-gradient(180deg, rgba(255, 231, 221, 0) 0%, rgba(255, 231, 221, 0.92) 55%, rgba(255, 231, 221, 1) 100%)",
+    },
+
+    scrollFadeTop: {
+        position: "absolute",
+        left: 2,
+        right: 2,
+        top: 2,
+        height: 20,
+        borderTopLeftRadius: 8,
+        borderTopRightRadius: 8,
+        backgroundImage:
+            "linear-gradient(0deg, rgba(255, 231, 221, 0) 0%, rgba(255, 231, 221, 0.75) 100%)",
+    },
+
+    scrollHintText: {
+        color: "#6b3f1a",
+        fontSize: 11,
+        fontWeight: "700",
+    },
     
 })
 

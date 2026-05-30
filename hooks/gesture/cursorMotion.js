@@ -1,4 +1,3 @@
-/** Suavização exponencial do cursor com zona morta. */
 export class CursorMotion {
   constructor(alpha = 0.3) {
     this.alpha = alpha;

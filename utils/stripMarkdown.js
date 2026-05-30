@@ -1,6 +1,3 @@
-/**
- * Texto plano para copiar — remove marcacao comum mesmo se o modelo escapar regras.
- */
 export function stripMarkdown(text) {
   if (!text || typeof text !== "string") return "";
 

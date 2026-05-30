@@ -4,15 +4,12 @@ import { loadMediaPipeVision } from "./loadMediaPipeVision";
 import { HandStabilityGate } from "./gesture/handStability";
 import { StablePinchGate } from "./gesture/stablePinchGate";
 import { OneEuroPointer } from "./gesture/oneEuroFilter";
+import { DEFAULT_GESTURE_SETTINGS } from "./gesture/gestureSettings";
 import {
-  HAND_STABLE_OFF_FRAMES,
-  HAND_STABLE_ON_FRAMES,
   MIN_HAND_DETECTION_CONFIDENCE,
   MIN_HAND_PRESENCE_CONFIDENCE,
   MIN_HAND_SCORE,
   MIN_HAND_TRACKING_CONFIDENCE,
-  ONE_EURO_IDLE,
-  ONE_EURO_PINCH,
 } from "./gesture/gestureContracts";
 
 const CURSOR_LANDMARK_INDEX = 8;
@@ -34,7 +31,16 @@ function handDetectionScore(result) {
   return result?.landmarks?.[0] ? 1 : 0;
 }
 
-export function useWebGestureCursor(enabled) {
+function buildOneEuroOpts(settings, pinch) {
+  return {
+    freq: settings.oneEuroFreq,
+    minCutoff: pinch ? settings.oneEuroPinchMinCutoff : settings.oneEuroIdleMinCutoff,
+    beta: pinch ? settings.oneEuroPinchBeta : settings.oneEuroIdleBeta,
+    dCutoff: 1,
+  };
+}
+
+export function useWebGestureCursor(enabled, settingsRef) {
   const [supported, setSupported] = useState(Platform.OS === "web");
   const [tracking, setTracking] = useState(false);
   const [error, setError] = useState(null);
@@ -42,6 +48,8 @@ export function useWebGestureCursor(enabled) {
   const cursorRef = useRef({ x: 0, y: 0 });
   const pinchingRef = useRef(false);
   const handVisibleRef = useRef(false);
+  const fallbackSettingsRef = useRef(DEFAULT_GESTURE_SETTINGS);
+  const activeSettingsRef = settingsRef ?? fallbackSettingsRef;
 
   useEffect(() => {
     if (!enabled || Platform.OS !== "web") return undefined;
@@ -55,11 +63,15 @@ export function useWebGestureCursor(enabled) {
     let lastDetectMs = 0;
     let rawTarget = null;
 
-    const pointerFilter = new OneEuroPointer(ONE_EURO_IDLE, ONE_EURO_PINCH);
+    const s0 = activeSettingsRef.current;
+    const pointerFilter = new OneEuroPointer(
+      buildOneEuroOpts(s0, false),
+      buildOneEuroOpts(s0, true)
+    );
     const pinchGate = new StablePinchGate();
     const handStable = new HandStabilityGate(
-      HAND_STABLE_ON_FRAMES,
-      HAND_STABLE_OFF_FRAMES
+      s0.handStableOnFrames,
+      s0.handStableOffFrames
     );
 
     const stop = () => {
@@ -125,6 +137,13 @@ export function useWebGestureCursor(enabled) {
 
         const tick = (now) => {
           const ts = now ?? performance.now();
+          const cfg = activeSettingsRef.current;
+
+          pointerFilter.applySettings(
+            buildOneEuroOpts(cfg, false),
+            buildOneEuroOpts(cfg, true)
+          );
+          handStable.setThresholds(cfg.handStableOnFrames, cfg.handStableOffFrames);
 
           if (
             video &&
@@ -152,14 +171,14 @@ export function useWebGestureCursor(enabled) {
               rawTarget = { x, y };
 
               const pinching = pinchGate.update(
-                distance(hand[CURSOR_LANDMARK_INDEX], hand[THUMB_LANDMARK_INDEX])
+                distance(hand[CURSOR_LANDMARK_INDEX], hand[THUMB_LANDMARK_INDEX]),
+                cfg.pinchClose,
+                cfg.pinchOpen,
+                cfg.pinchOpenFrames
               );
               pinchingRef.current = pinching;
               pointerFilter.setPinching(pinching, x, y, ts);
             } else if (!rawDetected) {
-              // Não zera a pinça imediatamente: câmera pode perder 1-2 frames
-              // ao mover rápido. Só reseta quando handStable confirma que a
-              // mão sumiu de verdade (HAND_STABLE_OFF_FRAMES consecutivos).
               if (!handVisibleRef.current) {
                 rawTarget = null;
                 pinchGate.reset();
@@ -204,7 +223,7 @@ export function useWebGestureCursor(enabled) {
       cursorRef.current = { x: 0, y: 0 };
       stop();
     };
-  }, [enabled]);
+  }, [enabled, activeSettingsRef]);
 
   return {
     supported,
