@@ -311,7 +311,7 @@ const DraggableOrderCard = ({
 };
 
 const OrderKanban = () => {
-  const { data, isLoading, isError, error } = useOrders();
+  const { data, isLoading, isError, error, isFetching } = useOrders();
   const queryClient = useQueryClient();
   const [interactionMode, setInteractionMode] = useState(INTERACTION_MODES.TOUCH);
   const [isDraggingCard, setIsDraggingCard] = useState(false);
@@ -360,12 +360,31 @@ const OrderKanban = () => {
 
   ordersRef.current = orders;
 
-  const findOrderForKanban = (orderId) =>
-    ordersRef.current.find(
+  const findOrderForKanban = (orderId) => {
+    if (orderId == null) return null;
+    return ordersRef.current.find(
       (o) =>
         String(o.id) === String(orderId) ||
         (o.resumoPedidoId != null && String(o.resumoPedidoId) === String(orderId))
     );
+  };
+
+  const selectedOrderRaw = useMemo(() => {
+    if (detailsOrderId == null) return null;
+    return findOrderForKanban(detailsOrderId)?.raw ?? null;
+  }, [detailsOrderId, orders]);
+
+  useEffect(() => {
+    if (detailsOrderId == null) return;
+    if (isLoading || isFetching) return;
+    if (isError) {
+      setDetailsOrderId(null);
+      return;
+    }
+    if (!selectedOrderRaw) {
+      setDetailsOrderId(null);
+    }
+  }, [detailsOrderId, isLoading, isFetching, isError, selectedOrderRaw]);
 
   const resolveResumoPedidoId = (order) => {
     if (!order) return null;
@@ -1084,7 +1103,7 @@ const OrderKanban = () => {
     }
   }, [isGestureMode]);
 
-  if (isLoading && orders.length === 0) {
+  if ((isLoading || isFetching) && orders.length === 0) {
     return (
       <View
         style={{
@@ -1092,9 +1111,14 @@ const OrderKanban = () => {
           alignItems: "center",
           justifyContent: "center",
           backgroundColor: "#FFEEE7",
+          padding: 24,
+          gap: 16,
         }}
       >
         <ActivityIndicator size="large" color="#A47032" />
+        <Text style={{ color: "#103464", textAlign: "center" }}>
+          Carregando pedidos… A primeira vez pode levar até 1–2 minutos.
+        </Text>
       </View>
     );
   }
@@ -1108,10 +1132,15 @@ const OrderKanban = () => {
           justifyContent: "center",
           backgroundColor: "#FFEEE7",
           padding: 16,
+          gap: 12,
         }}
       >
         <Text style={{ color: "#103464", textAlign: "center" }}>
           Erro ao carregar pedidos: {error?.message ?? "Tente novamente mais tarde."}
+        </Text>
+        <Text style={{ color: "#103464", textAlign: "center", fontSize: 13 }}>
+          Confira se a API Java está rodando em http://localhost:8080 e aguarde até 2 min na
+          primeira carga (muitos pedidos no banco).
         </Text>
       </View>
     );
@@ -1322,7 +1351,7 @@ const OrderKanban = () => {
         onApplyPreset={gestureSettingsApi.applyPreset}
         onResetDefaults={gestureSettingsApi.resetDefaults}
       />
-      {isGestureMode && detailsOrderId != null ? (
+      {isGestureMode && detailsOrderId != null && selectedOrderRaw ? (
         <Modal
           visible
           animationType="none"
@@ -1331,7 +1360,7 @@ const OrderKanban = () => {
         >
           <OrderSummary
             onClose={closeDetailsModal}
-            order={orders.find((o) => o.id === detailsOrderId)?.raw}
+            order={selectedOrderRaw}
             enableGestureCloseTargets
             onGestureScrollReady={handleModalGestureScrollReady}
           />

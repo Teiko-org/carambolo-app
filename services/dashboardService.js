@@ -68,9 +68,42 @@ export const getProdutosFornadasMaisPedidos = async () => {
 export const getLastOrders = async () => {
   try {
     const { data } = await api.get("/dashboard/ultimosPedidos");
-    return data;
+    return Array.isArray(data) ? data : [];
   } catch (e) {
     console.log("error getting ultimos pedidos: ", e);
     throw e;
   }
 };
+
+/** Detalhes completos de um pedido de bolo (modal do Dashboard). */
+export const getPedidoBoloCompletoById = async (pedidoBoloId) => {
+  const { data } = await api.get(`/bolos/pedido/completo/${pedidoBoloId}`, {
+    timeout: 60_000,
+  });
+  return data;
+};
+
+export const getPedidoFornadaDetalhe = async (pedidoFornadaId) => {
+  const { data } = await api.get(
+    `/resumo-pedido/pedido-fornada/detalhe/${pedidoFornadaId}`,
+    { timeout: 60_000 }
+  );
+  return data;
+};
+
+/** Formato esperado pelo OrderSummary para pedidos de fornada. */
+export const mapFornadaDetalheToSummary = (detail, resumoId) => ({
+  id: resumoId,
+  resumoPedidoId: resumoId,
+  tipoProduto: "FORNADA",
+  nomeCliente: detail?.nomeCliente,
+  telefoneCliente: detail?.telefoneCliente,
+  tipoEntrega: detail?.tipoEntrega,
+  observacao: detail?.observacao,
+  dataPrevisaoEntrega: detail?.dataPedido,
+  endereco: detail?.endereco ?? null,
+  fornadaDetalhe: {
+    produtoFornada: detail?.produtoFornada,
+    quantidade: detail?.quantidade,
+  },
+});

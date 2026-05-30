@@ -1,9 +1,17 @@
 import api from "./api/api";
 
+/** Lista completa do Kanban — resposta grande (~15s+ com seed histórico). */
+const KANBAN_ORDERS_TIMEOUT_MS = 120_000;
+
 export const getOrders = async () => {
   console.log("Buscando pedidos do back-end");
-  const { data } = await api.get("/bolos/pedido/completo");
-  console.log(data);
+  const { data } = await api.get("/bolos/pedido/completo", {
+    timeout: KANBAN_ORDERS_TIMEOUT_MS,
+  });
+  if (!Array.isArray(data)) {
+    console.warn("[Kanban] Resposta inesperada de /bolos/pedido/completo:", data);
+    return [];
+  }
   return data;
 };
 
