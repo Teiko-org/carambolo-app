@@ -8,7 +8,7 @@ const styles = StyleSheet.create({
     borderStyle: "solid",
     borderRadius: 12,
     overflow: "hidden",
-    maxHeight: 400,
+    maxHeight: 480,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
