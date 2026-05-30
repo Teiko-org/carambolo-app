@@ -54,7 +54,9 @@ export default function Layout() {
           </View>
         )}
 
-        <Slot />
+        <View style={{ flex: 1, minHeight: 0, width: "100%" }}>
+          <Slot />
+        </View>
 
         {!hideSideMenu && (
           <View

@@ -1,5 +1,3 @@
-/** Filtro 1€ — suaviza sem atraso excessivo (Casiez et al.). */
-
 class LowPass {
   constructor() {
     this.y = null;
@@ -58,6 +56,13 @@ class OneEuro1D {
     this.dx.reset();
     this.lastTime = null;
   }
+
+  setParams({ minCutoff, beta, dCutoff, freq }) {
+    if (minCutoff != null) this.minCutoff = minCutoff;
+    if (beta != null) this.beta = beta;
+    if (dCutoff != null) this.dCutoff = dCutoff;
+    if (freq != null) this.freq = freq;
+  }
 }
 
 export class OneEuroPointer {
@@ -96,6 +101,15 @@ export class OneEuroPointer {
       x: this.fx.filter(x, timestamp),
       y: this.fy.filter(y, timestamp),
     };
+  }
+
+  applySettings(idleOpts, pinchOpts) {
+    this.idleOpts = idleOpts;
+    this.pinchOpts = pinchOpts;
+    this.fx.setParams(idleOpts);
+    this.fy.setParams(idleOpts);
+    this.pinchFx.setParams(pinchOpts);
+    this.pinchFy.setParams(pinchOpts);
   }
 
   reset() {

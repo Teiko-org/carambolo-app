@@ -1,4 +1,3 @@
-/** Carrega MediaPipe na web via CDN — evita Metro bundlar vision_bundle.mjs (erro 500). */
 const MEDIAPIPE_VISION_ESM =
   "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/+esm";
 

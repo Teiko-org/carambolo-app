@@ -1,5 +1,15 @@
 import { StyleSheet } from "react-native";
 
+export const voiceColors = {
+  gold: "#A47032",
+  goldLight: "#D4B076",
+  navy: "#103464",
+  slate: "#30344F",
+  cream: "#F5EDE3",
+  waveformIdle: "#C4B5A0",
+  waveformActive: "#A47032",
+};
+
 export const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
@@ -16,6 +26,83 @@ export const styles = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: 20,
     elevation: 3,
+  },
+  voiceBar: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 4,
+    minHeight: 40,
+  },
+  iconBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  recordingCenter: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  recordingDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#C45C4A",
+  },
+  recordingDotPaused: {
+    backgroundColor: "#A47032",
+  },
+  durationText: {
+    fontSize: 14,
+    color: "#30344F",
+    fontVariant: ["tabular-nums"],
+    minWidth: 36,
+  },
+  waveformRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    height: 24,
+    overflow: "hidden",
+  },
+  waveformBar: {
+    width: 3,
+    borderRadius: 2,
+    backgroundColor: "#C4B5A0",
+  },
+  progressTrack: {
+    flex: 1,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#E8DDD0",
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: voiceColors.gold,
+    borderRadius: 2,
+  },
+  finishBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#30344F",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sendVoiceBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: voiceColors.gold,
+    alignItems: "center",
+    justifyContent: "center",
   },
   input: {
     flex: 1,
@@ -35,6 +122,21 @@ export const styles = StyleSheet.create({
   },
   sendBtnDisabled: {
     opacity: 0.5,
+  },
+  micBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: voiceColors.cream,
+    borderWidth: 1,
+    borderColor: voiceColors.gold,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 2,
+  },
+  micBtnActive: {
+    backgroundColor: "#C45C4A",
+    borderColor: "#C45C4A",
   },
   disclaimer: {
     textAlign: "center",

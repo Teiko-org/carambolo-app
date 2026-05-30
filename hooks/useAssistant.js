@@ -1,6 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   askQuestion,
+  askAudio,
   getInsights,
   getSuggestedPrompts,
 } from "../services/assistantService";
@@ -36,6 +37,14 @@ export const useAskQuestion = () => {
   return useMutation({
     mutationFn: ({ question, sessionId, confirmation }) =>
       askQuestion(question, sessionId, confirmation),
+    retry: false,
+  });
+};
+
+export const useAskAudio = () => {
+  return useMutation({
+    mutationFn: ({ uri, mimeType, sessionId }) =>
+      askAudio(uri, mimeType, sessionId),
     retry: false,
   });
 };
