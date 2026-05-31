@@ -1,3 +1,4 @@
+import "../services/i18n"; // inicializa i18n antes de qualquer tela
 import { Modal, StatusBar, Text, View } from "react-native";
 import { Slot, usePathname } from "expo-router";
 import { useState } from "react";

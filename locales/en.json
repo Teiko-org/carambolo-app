@@ -1,0 +1,30 @@
+{
+  "home": {
+    "searchPlaceholder": "What are you looking for?",
+    "kurokoTitle": "Kuroko Assistant",
+    "kurokoSubtitle": "Talk to analyze your\nbusiness data",
+    "kurokoCtaText": "Chat with Assistant",
+    "sectionTitle": "What would you like to view?",
+    "timerExpired": "Closed",
+    "nav": {
+      "products": "Products",
+      "orders": "Orders",
+      "dashboard": "Dashboard"
+    },
+    "timer": {
+      "days": "DAYS"
+    }
+  },
+  "sideMenu": {
+    "greeting": "Hello, Carambolo!",
+    "assistantDescription": "Talk to Kuroko to analyze your business data and identify trends to support your decisions.",
+    "assistantCta": "Chat with Assistant",
+    "nav": {
+      "home": "Home",
+      "orders": "Orders",
+      "products": "Products",
+      "dashboard": "Dashboard",
+      "importHistory": "Import order history"
+    }
+  }
+}
