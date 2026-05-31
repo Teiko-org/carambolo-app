@@ -4,15 +4,16 @@ export const getOrders = async ({ month, year } = {}) => {
   console.log("Buscando pedidos do back-end");
   const params = {};
 
-  if (year?.length === 4) {
+  const yearIsValid = year?.length === 4 && !Number.isNaN(Number(year));
+  const monthNumber = month?.length > 0 ? Number(month) : undefined;
+  const monthIsValid = monthNumber >= 1 && monthNumber <= 12;
+
+  if (yearIsValid) {
     params.ano = Number(year);
   }
 
-  if (month?.length > 0) {
-    const monthNumber = Number(month);
-    if (monthNumber >= 1 && monthNumber <= 12) {
-      params.mes = monthNumber;
-    }
+  if (monthIsValid) {
+    params.mes = monthNumber;
   }
 
   const { data } = await api.get("/bolos/pedido/completo", { params });

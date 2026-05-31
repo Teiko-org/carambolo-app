@@ -2,6 +2,7 @@ import { Modal, Pressable, StatusBar, Text, TextInput, View } from "react-native
 import { Slot, usePathname } from "expo-router";
 import { useState } from "react";
 import ButtonSideMenu from "../components/atoms/ButtonSideMenu/ButtonSideMenu";
+import Select from "../components/atoms/Select/Select";
 import SideMenu from "../components/organisms/SideMenu/SideMenu";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { OrderFilterContext } from "../contexts/orderFilterContext";
@@ -27,11 +28,6 @@ export default function Layout() {
   const hideSideMenu = HIDE_SIDEMENU_ROUTES.includes(pathname);
   const isOrdersPage = pathname === "/OrderKanban";
   const headerTitle = isOrdersPage ? "Pedidos" : selected;
-
-  const handleMonthChange = (value) => {
-    const onlyDigits = value.replace(/\D/g, "");
-    setMonth(onlyDigits.slice(0, 2));
-  };
 
   const handleYearChange = (value) => {
     const onlyDigits = value.replace(/\D/g, "");
@@ -117,25 +113,18 @@ export default function Layout() {
                 >
                   Filtrar
                 </Text>
-                <View style={{ flexDirection: "row", gap: 10 }}>
-                  <TextInput
-                    value={month}
-                    onChangeText={handleMonthChange}
-                    placeholder="Mês"
-                    placeholderTextColor="#5E5E5E"
-                    keyboardType="number-pad"
-                    maxLength={2}
-                    style={{
-                      flex: 1,
-                      backgroundColor: "#FFFFFF",
-                      borderRadius: 999,
-                      borderColor: "#A47032",
-                      borderWidth: 2,
-                      paddingHorizontal: 16,
-                      paddingVertical: 8,
-                      fontWeight: "700",
-                    }}
-                  />
+                <View style={{ flexDirection: "row", gap: 10, justifyContent: "space-between", flexWrap: "wrap", alignItems: "center" }}>
+                  <View style={{ width: 130, minWidth: 130, maxWidth: 130, flexShrink: 0 }}>
+                    <Select
+                      placeholder="Mês"
+                      selectedValue={month}
+                      setSelectedValue={setMonth}
+                      options={Array.from({ length: 12 }, (_, index) => {
+                        const value = String(index + 1);
+                        return { label: value, value };
+                      })}
+                    />
+                  </View>
                   <TextInput
                     value={year}
                     onChangeText={handleYearChange}
@@ -144,12 +133,16 @@ export default function Layout() {
                     keyboardType="number-pad"
                     maxLength={4}
                     style={{
-                      flex: 1,
+                      width: 130,
+                      minWidth: 130,
+                      maxWidth: 130,
+                      flexGrow: 0,
+                      flexShrink: 0,
                       backgroundColor: "#FFFFFF",
                       borderRadius: 999,
                       borderColor: "#A47032",
                       borderWidth: 2,
-                      paddingHorizontal: 16,
+                      paddingHorizontal: 12,
                       paddingVertical: 8,
                       fontWeight: "700",
                     }}

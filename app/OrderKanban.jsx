@@ -244,6 +244,40 @@ const OrderKanban = () => {
     return data.map(normalizeOrder);
   }, [data]);
 
+  const filterPeriodMessage = useMemo(() => {
+    if (!month && !year) return null;
+
+    const monthNames = [
+      "Janeiro",
+      "Fevereiro",
+      "Março",
+      "Abril",
+      "Maio",
+      "Junho",
+      "Julho",
+      "Agosto",
+      "Setembro",
+      "Outubro",
+      "Novembro",
+      "Dezembro",
+    ];
+
+    const monthNumber = Number(month);
+    const monthName = monthNumber >= 1 && monthNumber <= 12 ? monthNames[monthNumber - 1] : null;
+
+    if (monthName && year) {
+      return `Pedidos não encontrados no período de ${monthName}/${year}`;
+    }
+    if (year) {
+      return `Pedidos não encontrados no ano de ${year}`;
+    }
+    return monthName
+      ? `Pedidos não encontrados no período de ${monthName}`
+      : `Pedidos não encontrados no período de ${month}`;
+  }, [month, year]);
+
+  const showFilteredEmptyState = !isLoading && !isError && orders.length === 0 && !!filterPeriodMessage;
+
   ordersRef.current = orders;
 
   const handleDrop = async (orderId, newStatus) => {
@@ -608,6 +642,31 @@ const OrderKanban = () => {
       >
         <Text style={{ color: "#103464", textAlign: "center" }}>
           Erro ao carregar pedidos: {error?.message ?? "Tente novamente mais tarde."}
+        </Text>
+      </View>
+    );
+  }
+
+  if (showFilteredEmptyState) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#FFEEE7",
+          padding: 24,
+        }}
+      >
+        <Text
+          style={{
+            color: "#4a2f14",
+            fontSize: 16,
+            fontWeight: "700",
+            textAlign: "center",
+          }}
+        >
+          {filterPeriodMessage}
         </Text>
       </View>
     );
