@@ -18,6 +18,11 @@ export const getOrders = async ({ month, year } = {}) => {
 
   const { data } = await api.get("/bolos/pedido/completo", { params });
   console.log(data);
+
+  if (!Array.isArray(data)) {
+    console.warn("[Kanban] Resposta inesperada de /bolos/pedido/completo:", data);
+    return [];
+  }
   return data;
 };
 

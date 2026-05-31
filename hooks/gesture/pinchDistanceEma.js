@@ -1,4 +1,3 @@
-/** Suaviza distância polegar–indicador para pinça não “piscar”. */
 export class PinchDistanceEma {
   constructor(alpha = 0.38) {
     this.alpha = alpha;

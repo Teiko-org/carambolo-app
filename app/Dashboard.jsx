@@ -75,6 +75,9 @@ const Dashboard = () => {
 
     const {
         data: lastOrdersData,
+        isLoading: isLoadingLastOrders,
+        isError: isErrorLastOrders,
+        error: lastOrdersError,
     } = useLastOrders()
 
     const chartData = useMemo(() => {
@@ -130,8 +133,12 @@ const Dashboard = () => {
             return []
         }
 
-        return lastOrdersData.map((order) => ({
+        return lastOrdersData.slice(0, 15).map((order) => ({
             id: order?.id ?? `${order?.dataPedido}-${order?.nomeDoCliente}`,
+            resumoId: order?.id,
+            pedidoBoloId: order?.pedidoBoloId ?? null,
+            pedidoFornadaId: order?.pedidoFornadaId ?? null,
+            tipoProduto: order?.tipoProduto ?? "BOLO",
             name: order?.nomeDoCliente || "Cliente sem nome",
             phone: formatPhone(order?.telefoneDoCliente),
             type: orderTypeLabelMap[order?.tipoDoPedido] || order?.tipoDoPedido || "N/A",
@@ -244,6 +251,9 @@ const Dashboard = () => {
                     title={'Últimos Pedidos'}
                     subtitle={'Pedidos mais recentes'}
                     orders={formattedLastOrders}
+                    isLoading={isLoadingLastOrders}
+                    isError={isErrorLastOrders}
+                    error={lastOrdersError}
                 />
             </ScrollView>
         </View>

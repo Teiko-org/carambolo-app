@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
   View,
   ScrollView,
@@ -8,15 +8,24 @@ import {
   PanResponder,
   Pressable,
   Platform,
+  Modal,
 } from "react-native";
 import PropTypes from "prop-types";
+
+const createPortal =
+  Platform.OS === "web" ? require("react-dom").createPortal : null;
 import { useQueryClient } from "@tanstack/react-query";
-import KanbanColumn from "../components/organisms/KanbanColumn/KanbanColumn";
+import KanbanColumn, {
+  KANBAN_COLUMN_WIDTH,
+} from "../components/organisms/KanbanColumn/KanbanColumn";
 import OrderCard from "../components/molecules/OrderCard/OrderCard";
+import OrderSummary from "../components/organisms/OrderSummary/OrderSummary";
 import { useOrders } from "../hooks/useOrderKanban";
 import { updateOrderStatus } from "../services/orderKanbanService";
 import { useWebGestureCursor } from "../hooks/useWebGestureCursor";
 import { useOrderFilter } from "../contexts/orderFilterContext";
+import { useGestureSettings } from "../hooks/useGestureSettings";
+import GestureSettingsPanel from "../components/molecules/GestureSettingsPanel/GestureSettingsPanel";
 
 const COLUMNS = [
   { key: "CANCELADO", title: "Pedidos Cancelados" },
@@ -30,12 +39,21 @@ const INTERACTION_MODES = {
   GESTURE: "gesture",
 };
 
-const EDGE_THRESHOLD = 120;
 const EDGE_HOVER_MS = 380;
 const MIN_SCROLL_STEP = 2;
 const MAX_SCROLL_STEP = 7;
-const GESTURE_SCROLL_MIN_PX = 1.5;
-const GESTURE_SCROLL_MAX_PX = 5;
+const GESTURE_DWELL_CLOSE_MS = 550;
+const GESTURE_CLICK_MAX_MS = 650;
+const GESTURE_CLICK_MAX_MOVE = 35;
+const MODAL_SCROLL_START_Y = 4;
+const COLUMN_SCROLL_START_Y = 22;
+const COLUMN_SCROLL_VERTICAL_RATIO = 1.15;
+const KANBAN_COLUMN_GAP = 20;
+const KANBAN_BOARD_PADDING_X = 20;
+const KANBAN_CONTENT_MIN_WIDTH =
+  COLUMNS.length * KANBAN_COLUMN_WIDTH +
+  (COLUMNS.length - 1) * KANBAN_COLUMN_GAP +
+  KANBAN_BOARD_PADDING_X * 2;
 const isWeb = Platform.OS === "web";
 
 const findOrderIdAtPoint = (x, y) => {
@@ -60,6 +78,80 @@ const findColumnKeyAtPoint = (x, y) => {
   return null;
 };
 
+const isColumnScrollTarget = (x, y) => {
+  if (!isWeb || typeof document === "undefined") return false;
+  let node = document.elementFromPoint(x, y);
+  while (node) {
+    if (node.dataset?.columnScroll === "true") return true;
+    node = node.parentElement;
+  }
+  return false;
+};
+
+const resolveColumnScrollElement = (x, y) => {
+  if (!isWeb || typeof document === "undefined") return null;
+  let node = document.elementFromPoint(x, y);
+  while (node) {
+    if (node.dataset?.columnScroll === "true") return node;
+    node = node.parentElement;
+  }
+  return null;
+};
+
+const scrollColumnContentBy = (deltaY, el) => {
+  if (!deltaY || !el || typeof el.scrollTop !== "number") return;
+  const maxScroll = Math.max(0, el.scrollHeight - el.clientHeight);
+  el.scrollTop = Math.min(maxScroll, Math.max(0, el.scrollTop + deltaY));
+};
+
+const findDetailsTriggerOrderId = (x, y) => {
+  if (!isWeb || typeof document === "undefined") return null;
+  let node = document.elementFromPoint(x, y);
+  while (node) {
+    const raw = node.dataset?.orderDetailsTrigger;
+    if (raw) return Number(raw);
+    node = node.parentElement;
+  }
+  return null;
+};
+
+const isModalCloseTarget = (x, y) => {
+  if (!isWeb || typeof document === "undefined") return false;
+  let node = document.elementFromPoint(x, y);
+  while (node) {
+    if (node.dataset?.modalCloseTrigger === "true") return true;
+    node = node.parentElement;
+  }
+  return false;
+};
+
+const isModalCloseZone = (x, y, modalOpen) => {
+  if (!modalOpen) return false;
+  if (isModalCloseTarget(x, y)) return true;
+  if (typeof window !== "undefined") {
+    const h = window.innerHeight || 0;
+    if (h > 0 && y <= h * 0.2) return true;
+  }
+  return false;
+};
+
+const isModalSheetTarget = (x, y) => {
+  if (!isWeb || typeof document === "undefined") return false;
+  let node = document.elementFromPoint(x, y);
+  while (node) {
+    if (node.dataset?.modalSheet === "true") return true;
+    if (node.dataset?.modalScroll === "true") return true;
+    node = node.parentElement;
+  }
+  return false;
+};
+
+const isModalCloseRailStart = (y) => {
+  if (typeof window === "undefined") return false;
+  const h = window.innerHeight || 0;
+  return h > 0 && y <= h * 0.18;
+};
+
 const formatDate = (dateString) => {
   if (!dateString) return "";
   const [year, month, day] = dateString.split("-");
@@ -67,11 +159,13 @@ const formatDate = (dateString) => {
 };
 
 const normalizeOrder = (raw) => {
-  const id = raw?.id ?? String(Math.random());
+  const pedidoBoloId = raw?.id;
+  const resumoPedidoId = raw?.resumoPedidoId ?? null;
+  const id = pedidoBoloId ?? resumoPedidoId ?? String(Math.random());
 
   return {
     id,
-    resumoPedidoId: raw?.resumoPedidoId ?? null,
+    resumoPedidoId,
     status: raw?.status ?? "PENDENTE",
     name: raw?.nomeCliente ?? "Cliente",
     phone: raw?.telefoneCliente ?? "",
@@ -91,10 +185,12 @@ const DraggableOrderCard = ({
   onDragStateChange,
   onDragMove,
   getCurrentScrollX,
-  resolveTargetStatusFromMoveX,
+  onResolveDropTarget,
   onDragPreviewStart,
   onDragPreviewMove,
   onDragPreviewEnd,
+  isGestureMode,
+  onOpenDetails,
 }) => {
   const position = useRef(new Animated.ValueXY()).current;
   const [isDragging, setIsDragging] = useState(false);
@@ -108,10 +204,13 @@ const DraggableOrderCard = ({
   };
 
   const finishDrag = (gestureState) => {
-    const targetStatus = resolveTargetStatusFromMoveX(gestureState.moveX);
+    const targetStatus = onResolveDropTarget(
+      gestureState.moveX,
+      gestureState.moveY
+    );
     const targetIndex = COLUMNS.findIndex((column) => column.key === targetStatus);
 
-    if (targetIndex !== -1 && targetIndex !== columnIndex) {
+    if (targetStatus && targetIndex !== -1 && targetIndex !== columnIndex) {
       onDrop(order.id, targetStatus);
     }
 
@@ -126,10 +225,12 @@ const DraggableOrderCard = ({
         onStartShouldSetPanResponder: () => false,
         onMoveShouldSetPanResponder: (_, gestureState) =>
           dragEnabled &&
-          (Math.abs(gestureState.dx) > 4 || Math.abs(gestureState.dy) > 4),
+          Math.abs(gestureState.dx) > Math.abs(gestureState.dy) &&
+          Math.abs(gestureState.dx) > 6,
         onMoveShouldSetPanResponderCapture: (_, gestureState) =>
           dragEnabled &&
-          (Math.abs(gestureState.dx) > 4 || Math.abs(gestureState.dy) > 4),
+          Math.abs(gestureState.dx) > Math.abs(gestureState.dy) &&
+          Math.abs(gestureState.dx) > 6,
         onPanResponderGrant: () => {
           if (!dragEnabled) return;
           setIsDragging(true);
@@ -139,11 +240,14 @@ const DraggableOrderCard = ({
         },
         onPanResponderMove: (_, gestureState) => {
           if (!dragEnabled) return;
-          const scrollDeltaDuringDrag = getCurrentScrollX() - dragStartScrollXRef.current;
-          position.setValue({
-            x: gestureState.dx + scrollDeltaDuringDrag,
-            y: gestureState.dy,
-          });
+          if (!isWeb) {
+            const scrollDeltaDuringDrag =
+              getCurrentScrollX() - dragStartScrollXRef.current;
+            position.setValue({
+              x: gestureState.dx + scrollDeltaDuringDrag,
+              y: gestureState.dy,
+            });
+          }
           onDragMove(gestureState.moveX);
           onDragPreviewMove({
             x: gestureState.moveX,
@@ -154,13 +258,13 @@ const DraggableOrderCard = ({
         onShouldBlockNativeResponder: () => true,
         onPanResponderRelease: (_, gestureState) => {
           if (!dragEnabled) return;
-          onDragPreviewEnd();
           finishDrag(gestureState);
+          onDragPreviewEnd();
         },
         onPanResponderTerminate: (_, gestureState) => {
           if (!dragEnabled) return;
-          onDragPreviewEnd();
           finishDrag(gestureState);
+          onDragPreviewEnd();
         },
       }),
     [
@@ -174,7 +278,7 @@ const DraggableOrderCard = ({
       onDragStateChange,
       onDrop,
       order.id,
-      resolveTargetStatusFromMoveX,
+      onResolveDropTarget,
       position,
       dragEnabled,
     ]
@@ -200,6 +304,8 @@ const DraggableOrderCard = ({
         order={order}
         deliveryDate={order.dataPrevisaoEntrega}
         orderId={order.id}
+        isGestureMode={isGestureMode}
+        onOpenDetails={onOpenDetails}
       />
     </Animated.View>
   );
@@ -207,15 +313,16 @@ const DraggableOrderCard = ({
 
 const OrderKanban = () => {
   const { month, year } = useOrderFilter();
-  const ordersQueryKey = ["orders", month || null, year || null];
-  const { data, isLoading, isError, error } = useOrders({ month, year });
+  const { data, isLoading, isError, error, isFetching } = useOrders({ month, year });
   const queryClient = useQueryClient();
   const [interactionMode, setInteractionMode] = useState(INTERACTION_MODES.TOUCH);
   const [isDraggingCard, setIsDraggingCard] = useState(false);
+  const isDraggingCardRef = useRef(false);
   const [draggingOrderId, setDraggingOrderId] = useState(null);
   const [gestureDraggedOrderId, setGestureDraggedOrderId] = useState(null);
   const scrollRef = useRef(null);
   const boardRef = useRef(null);
+  const boardContentRef = useRef(null);
   const scrollXRef = useRef(0);
   const viewportWidthRef = useRef(0);
   const boardBoundsRef = useRef({ x: 0, y: 0, width: 0, height: 0 });
@@ -231,14 +338,23 @@ const OrderKanban = () => {
   const dragPreviewLayerRef = useRef(null);
   const ordersRef = useRef([]);
   const pinchPickDoneRef = useRef(false);
+  const pinchSessionRef = useRef(null);
+  const dwellRef = useRef({ target: null, sinceMs: 0, anchorX: 0, anchorY: 0, armedAt: 0 });
+  const pointerStableRef = useRef({ x: 0, y: 0, sinceMs: 0 });
+  const dwellCooldownUntilRef = useRef(0);
+  const modalScrollRef = useRef(null);
+  const detailsOrderIdRef = useRef(null);
   const handWasVisibleRef = useRef(false);
+  const [gestureSettingsOpen, setGestureSettingsOpen] = useState(false);
+  const [detailsOrderId, setDetailsOrderId] = useState(null);
 
+  const gestureSettingsApi = useGestureSettings();
   const isGestureMode = interactionMode === INTERACTION_MODES.GESTURE;
-  const gesture = useWebGestureCursor(isGestureMode);
+  const gesture = useWebGestureCursor(isGestureMode, gestureSettingsApi.settingsRef);
 
   gestureDraggedOrderIdRef.current = gestureDraggedOrderId;
+  detailsOrderIdRef.current = detailsOrderId;
 
-  // Derive orders directly from React Query cache — no separate useState
   const orders = useMemo(() => {
     if (!Array.isArray(data)) return [];
     return data.map(normalizeOrder);
@@ -280,31 +396,79 @@ const OrderKanban = () => {
 
   ordersRef.current = orders;
 
-  const handleDrop = async (orderId, newStatus) => {
-    // Find the resumoPedidoId for the API call
-    const order = orders.find((o) => o.id === orderId);
-    const resumoPedidoId = order?.resumoPedidoId;
+  const findOrderForKanban = (orderId) => {
+    if (orderId == null) return null;
+    return ordersRef.current.find(
+      (o) =>
+        String(o.id) === String(orderId) ||
+        (o.resumoPedidoId != null && String(o.resumoPedidoId) === String(orderId))
+    );
+  };
 
-    if (!resumoPedidoId) {
-      console.warn("resumoPedidoId não encontrado para o pedido:", orderId);
+  const selectedOrderRaw = useMemo(() => {
+    if (detailsOrderId == null) return null;
+    return findOrderForKanban(detailsOrderId)?.raw ?? null;
+  }, [detailsOrderId, orders]);
+
+  useEffect(() => {
+    if (detailsOrderId == null) return;
+    if (isLoading || isFetching) return;
+    if (isError) {
+      setDetailsOrderId(null);
       return;
     }
+    if (!selectedOrderRaw) {
+      setDetailsOrderId(null);
+    }
+  }, [detailsOrderId, isLoading, isFetching, isError, selectedOrderRaw]);
 
-    // Optimistically update the React Query cache directly
-    queryClient.setQueryData(ordersQueryKey, (prev) => {
+  const resolveResumoPedidoId = (order) => {
+    if (!order) return null;
+    if (order.resumoPedidoId != null) return order.resumoPedidoId;
+    if (order.raw?.resumoPedidoId != null) return order.raw.resumoPedidoId;
+    return null;
+  };
+
+  const patchOrdersCacheStatus = (orderId, resumoPedidoId, newStatus) => {
+    queryClient.setQueryData(["orders"], (prev) => {
       if (!Array.isArray(prev)) return prev;
       return prev.map((raw) => {
-        const id = raw?.id;
-        if (id !== orderId) return raw;
+        const matchesPedido = String(raw?.id) === String(orderId);
+        const matchesResumo =
+          resumoPedidoId != null &&
+          raw?.resumoPedidoId != null &&
+          String(raw.resumoPedidoId) === String(resumoPedidoId);
+        if (!matchesPedido && !matchesResumo) return raw;
         return { ...raw, status: newStatus };
       });
     });
+  };
+
+  const handleDrop = async (orderId, newStatus) => {
+    const order = findOrderForKanban(orderId);
+    let resumoPedidoId = resolveResumoPedidoId(order);
+
+    if (!resumoPedidoId) {
+      const rawFromCache = queryClient
+        .getQueryData(["orders"])
+        ?.find((raw) => String(raw?.id) === String(orderId));
+      resumoPedidoId = rawFromCache?.resumoPedidoId ?? null;
+    }
+
+    patchOrdersCacheStatus(orderId, resumoPedidoId, newStatus);
+
+    if (!resumoPedidoId) {
+      console.warn(
+        "resumoPedidoId ausente — card movido só na tela. Backend não atualizado:",
+        orderId
+      );
+      return;
+    }
 
     try {
       await updateOrderStatus(resumoPedidoId, newStatus);
     } catch (e) {
-      // On failure, refetch to restore correct server state
-      queryClient.invalidateQueries({ queryKey: ordersQueryKey });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
       console.warn("Falha ao atualizar status no backend:", e);
     }
   };
@@ -326,34 +490,76 @@ const OrderKanban = () => {
     return groups;
   }, [orders]);
 
-  const handleDragStateChange = (isDragging, orderId) => {
-    setIsDraggingCard(isDragging);
-    setDraggingOrderId(isDragging ? orderId : null);
+  const setBoardTouchScrollLocked = (locked) => {
+    if (!isWeb || isGestureMode) return;
+    const dom = getBoardScrollDomNode();
+    if (!dom?.style) return;
+    dom.style.overflowX = locked ? "hidden" : "auto";
+    dom.style.touchAction = locked ? "none" : "pan-x";
   };
 
-  const gestureScrollDomNodeRef = useRef(null);
+  const handleDragStateChange = (isDragging, orderId) => {
+    isDraggingCardRef.current = isDragging;
+    setIsDraggingCard(isDragging);
+    setDraggingOrderId(isDragging ? orderId : null);
+    if (isWeb) {
+      if (isDragging) {
+        const dom = getBoardScrollDomNode();
+        if (dom) scrollXRef.current = dom.scrollLeft;
+      }
+      setBoardTouchScrollLocked(isDragging);
+    }
+  };
 
-  const getGestureScrollNode = () => {
-    if (gestureScrollDomNodeRef.current) return gestureScrollDomNodeRef.current;
+  const boardScrollDomNodeRef = useRef(null);
+
+  const getBoardScrollDomNode = () => {
+    if (boardScrollDomNodeRef.current) return boardScrollDomNodeRef.current;
+    if (isWeb && typeof document !== "undefined") {
+      const byData = document.querySelector('[data-board-scroll-viewport="true"]');
+      if (byData && typeof byData.scrollLeft === "number") {
+        boardScrollDomNodeRef.current = byData;
+        return byData;
+      }
+    }
     if (!scrollRef.current) return null;
     const node = scrollRef.current.getScrollableNode?.();
     if (node && typeof node.scrollLeft === "number") {
-      gestureScrollDomNodeRef.current = node;
+      boardScrollDomNodeRef.current = node;
       return node;
     }
     return null;
   };
 
+  const handleBoardViewportLayout = (event) => {
+    viewportWidthRef.current = event.nativeEvent.layout.width;
+    invalidateBoardScrollDomNode();
+    measureBoardBounds();
+  };
+
+  const handleBoardViewportScroll = (event) => {
+    const offsetX = event?.nativeEvent?.contentOffset?.x;
+    if (typeof offsetX === "number") {
+      scrollXRef.current = offsetX;
+    }
+  };
+
+  const invalidateBoardScrollDomNode = () => {
+    boardScrollDomNodeRef.current = null;
+  };
+
   const gestureEdgeEnteredAtRef = useRef({ edge: null, ts: 0 });
-  const GESTURE_EDGE_DELAY_MS = 200;
 
   const gestureScrollEdge = (viewportX) => {
     if (!isWeb) return;
+    const cfg = gestureSettingsApi.settingsRef.current;
+    const edgeThreshold = cfg.edgeThreshold;
+    const edgeDelayMs = cfg.edgeDelayMs;
     const viewportW = viewportWidthRef.current > 0 ? viewportWidthRef.current : 400;
     const distLeft = viewportX;
     const distRight = viewportW - viewportX;
-    const nearLeft = distLeft < EDGE_THRESHOLD;
-    const nearRight = distRight < EDGE_THRESHOLD;
+    const nearLeft = distLeft < edgeThreshold;
+    const nearRight = distRight < edgeThreshold;
 
     const currentEdge = nearLeft ? "left" : nearRight ? "right" : null;
 
@@ -369,15 +575,15 @@ const OrderKanban = () => {
       return;
     }
 
-    // Só começa a rolar após o cursor ficar na borda por GESTURE_EDGE_DELAY_MS.
-    if (now - prev.ts < GESTURE_EDGE_DELAY_MS) return;
+    if (now - prev.ts < edgeDelayMs) return;
 
-    const dom = getGestureScrollNode();
+    const dom = getBoardScrollDomNode();
     if (!dom) return;
 
     const dist = nearLeft ? distLeft : distRight;
-    const proximity = 1 - dist / EDGE_THRESHOLD;
-    const step = GESTURE_SCROLL_MIN_PX + (GESTURE_SCROLL_MAX_PX - GESTURE_SCROLL_MIN_PX) * proximity;
+    const proximity = 1 - dist / edgeThreshold;
+    const step =
+      cfg.scrollMinPx + (cfg.scrollMaxPx - cfg.scrollMinPx) * proximity;
 
     const delta = nearRight ? step : -step;
     dom.scrollLeft = Math.max(0, dom.scrollLeft + delta);
@@ -385,13 +591,12 @@ const OrderKanban = () => {
   };
 
   const scrollBoardAtViewportX = (viewportX) => {
-    if (!scrollRef.current) return;
-
     const leftDistance = viewportX;
     const rightDistance =
       (viewportWidthRef.current > 0 ? viewportWidthRef.current : 400) - viewportX;
-    const isNearLeft = leftDistance < EDGE_THRESHOLD;
-    const isNearRight = rightDistance < EDGE_THRESHOLD;
+    const edgeThreshold = gestureSettingsApi.settingsRef.current.edgeThreshold;
+    const isNearLeft = leftDistance < edgeThreshold;
+    const isNearRight = rightDistance < edgeThreshold;
 
     if (!isNearLeft && !isNearRight) return;
 
@@ -404,7 +609,7 @@ const OrderKanban = () => {
     const distanceToEdge = isNearLeft ? leftDistance : rightDistance;
     const normalizedProximity = Math.max(
       0,
-      Math.min(1, (EDGE_THRESHOLD - distanceToEdge) / EDGE_THRESHOLD)
+      Math.min(1, (edgeThreshold - distanceToEdge) / edgeThreshold)
     );
     const scrollStep =
       MIN_SCROLL_STEP + (MAX_SCROLL_STEP - MIN_SCROLL_STEP) * normalizedProximity;
@@ -413,21 +618,20 @@ const OrderKanban = () => {
       ? Math.max(scrollXRef.current - scrollStep, 0)
       : scrollXRef.current + scrollStep;
 
-    if (nextScroll !== scrollXRef.current) {
-      const node = scrollRef.current.getScrollableNode?.();
-      if (node && node.scrollTo) {
-        node.scrollTo({ x: nextScroll, animated: false });
-      } else {
-        scrollRef.current.scrollTo({ x: nextScroll, animated: false });
-      }
-      scrollXRef.current = nextScroll;
-    }
+    if (nextScroll === scrollXRef.current) return;
+
+    if (!scrollRef.current) return;
+    scrollRef.current.scrollTo({ x: nextScroll, animated: false });
+    scrollXRef.current = nextScroll;
   };
 
-  const handleDragMove = (moveX) => {
-    if (!isDraggingCard) return;
-    scrollBoardAtViewportX(moveX);
-  };
+  const handleDragMove = useCallback(
+    (screenX) => {
+      if (!isDraggingCardRef.current || isGestureMode) return;
+      scrollBoardAtViewportX(screenX);
+    },
+    [isGestureMode]
+  );
 
   const applyDragPreviewTransform = (viewportX, viewportY) => {
     const layer = dragPreviewLayerRef.current;
@@ -440,10 +644,34 @@ const OrderKanban = () => {
     }
   };
 
+  const tryStartGestureDrag = (x, y, session) => {
+    if (
+      !session ||
+      session.dragStarted ||
+      session.modalScrollStarted ||
+      session.columnScrollStarted ||
+      detailsOrderIdRef.current != null ||
+      gestureDraggedOrderIdRef.current != null
+    ) {
+      return false;
+    }
+    const picked = findOrderIdAtPoint(x, y);
+    if (picked == null) return false;
+    const pickedOrder = ordersRef.current.find((o) => o.id === picked);
+    if (!pickedOrder) return false;
+
+    session.dragStarted = true;
+    pinchPickDoneRef.current = true;
+    setGestureDraggedOrderId(pickedOrder.id);
+    handleDragStateChange(true, pickedOrder.id);
+    handleDragPreviewStart(pickedOrder);
+    applyDragPreviewTransform(x, y);
+    return true;
+  };
+
   const dragEnabled = !isGestureMode || !isWeb || !gesture.tracking;
 
-  const resolveTargetStatusFromMoveX = (moveX) => {
-    const pointerContentX = scrollXRef.current + moveX;
+  const resolveTargetStatusFromContentX = (pointerContentX, { allowEdgeAssist } = {}) => {
     const layouts = columnLayoutsRef.current;
 
     let closest = null;
@@ -462,8 +690,8 @@ const OrderKanban = () => {
 
     const baseTarget = closest?.key ?? "PENDENTE";
 
-    // Assistência para telas pequenas: ao manter o cursor na borda por alguns ms,
-    // tenta avançar/recuar uma coluna além da mais próxima.
+    if (!allowEdgeAssist) return baseTarget;
+
     const hover = edgeHoverRef.current;
     const hoverMs = hover.edge ? Date.now() - hover.sinceMs : 0;
     const shouldEdgeAssist = hover.edge && hoverMs >= EDGE_HOVER_MS;
@@ -479,15 +707,47 @@ const OrderKanban = () => {
     return COLUMNS[assistedIndex]?.key ?? baseTarget;
   };
 
-  const handleDragPreviewStart = (order) => {
+  const syncBoardScrollXRef = () => {
+    const dom = getBoardScrollDomNode();
+    if (dom && typeof dom.scrollLeft === "number") {
+      scrollXRef.current = dom.scrollLeft;
+    }
+  };
+
+  const resolveDropTarget = useCallback(
+    (screenX, screenY) => {
+      syncBoardScrollXRef();
+
+      if (isWeb) {
+        const byPoint = findColumnKeyAtPoint(screenX, screenY);
+        if (byPoint) return byPoint;
+      }
+
+      const bounds = boardBoundsRef.current;
+      const boardLeft = bounds?.x ?? 0;
+      const pointerContentX = scrollXRef.current + (screenX - boardLeft);
+
+      return resolveTargetStatusFromContentX(pointerContentX, {
+        allowEdgeAssist: isGestureMode,
+      });
+    },
+    [isGestureMode, orders, draggingOrderId]
+  );
+
+  const handleDragPreviewStart = useCallback((order) => {
+    measureBoardBounds();
     setDragPreview({
       order,
       x: 0,
       y: 0,
     });
-  };
+  }, []);
 
-  const handleDragPreviewMove = ({ x, y, localX, localY }) => {
+  const handleDragPreviewMove = useCallback(({ x, y, localX, localY }) => {
+    if (isWeb) {
+      applyDragPreviewTransform(x, y);
+      return;
+    }
     setDragPreview((prev) => {
       if (!prev) return prev;
       return {
@@ -498,12 +758,37 @@ const OrderKanban = () => {
         localY: localY ?? y - boardBoundsRef.current.y,
       };
     });
-  };
+  }, []);
 
-  const handleDragPreviewEnd = () => {
+  const handleDragPreviewEnd = useCallback(() => {
     edgeHoverRef.current = { edge: null, sinceMs: 0 };
+    if (isWeb && dragPreviewLayerRef.current?.style) {
+      dragPreviewLayerRef.current.style.transform = "";
+    }
     setDragPreview(null);
-  };
+  }, []);
+
+  const handleModalGestureScrollReady = useCallback((controls) => {
+    modalScrollRef.current = controls;
+  }, []);
+
+  const closeDetailsModal = useCallback(() => {
+    modalScrollRef.current?.reset?.();
+    setDetailsOrderId(null);
+  }, []);
+
+  const scrollModalContentBy = useCallback((deltaY) => {
+    if (!deltaY) return;
+    if (modalScrollRef.current?.scrollBy) {
+      modalScrollRef.current.scrollBy(deltaY);
+      return;
+    }
+    if (!isWeb || typeof document === "undefined") return;
+    const el = document.querySelector('[data-modal-scroll="true"]');
+    if (!el || typeof el.scrollTop !== "number") return;
+    const maxScroll = Math.max(0, el.scrollHeight - el.clientHeight);
+    el.scrollTop = Math.min(maxScroll, Math.max(0, el.scrollTop + deltaY));
+  }, []);
 
   const measureBoardBounds = () => {
     if (!isWeb || !boardRef.current?.measureInWindow) return;
@@ -512,47 +797,255 @@ const OrderKanban = () => {
     });
   };
 
-  const processGesturePinch = (x, y, moveX) => {
+  const processGesturePinch = (x, y) => {
     const pinching = gesture.pinchingRef.current;
     const wasPinching = pinchPrevRef.current;
+    let session = pinchSessionRef.current;
 
     if (pinching && !wasPinching) {
       pinchPickDoneRef.current = false;
-    }
-
-    if (!pinching && wasPinching && gestureDraggedOrderIdRef.current != null) {
-      const draggedId = gestureDraggedOrderIdRef.current;
-      const dropByPoint = findColumnKeyAtPoint(x, y);
-      const fallbackByMove = resolveTargetStatusFromMoveX(moveX);
-      const targetStatus = dropByPoint || fallbackByMove;
-      const targetIndex = COLUMNS.findIndex((column) => column.key === targetStatus);
-      const order = ordersRef.current.find((o) => o.id === draggedId);
-      const currentIndex = COLUMNS.findIndex((column) => column.key === order?.status);
-
-      if (targetIndex !== -1 && currentIndex !== -1 && targetIndex !== currentIndex) {
-        handleDrop(draggedId, targetStatus);
+      const cfg = gestureSettingsApi.settingsRef.current;
+      dwellCooldownUntilRef.current = Date.now() + cfg.dwellCooldownMs;
+      dwellRef.current = { target: null, sinceMs: 0, anchorX: 0, anchorY: 0, armedAt: 0 };
+      const startOrderId = findOrderIdAtPoint(x, y);
+      pinchSessionRef.current = {
+        startX: x,
+        startY: y,
+        startMs: Date.now(),
+        startOrderId,
+        dragStarted: false,
+        modalScrollStarted: false,
+        columnScrollStarted: false,
+        columnScrollEl: null,
+        lastScrollFingerY: 0,
+      };
+      session = pinchSessionRef.current;
+      if (detailsOrderIdRef.current == null && startOrderId != null) {
+        tryStartGestureDrag(x, y, session);
       }
-      setGestureDraggedOrderId(null);
-      handleDragStateChange(false, null);
-      handleDragPreviewEnd();
-      pinchPickDoneRef.current = false;
     }
 
-    if (pinching && !pinchPickDoneRef.current && gestureDraggedOrderIdRef.current == null) {
-      const picked = findOrderIdAtPoint(x, y);
-      if (picked != null) {
-        const pickedOrder = ordersRef.current.find((o) => o.id === picked);
-        if (pickedOrder) {
-          pinchPickDoneRef.current = true;
-          setGestureDraggedOrderId(pickedOrder.id);
-          handleDragStateChange(true, pickedOrder.id);
-          handleDragPreviewStart(pickedOrder);
-          applyDragPreviewTransform(x, y);
+    if (
+      pinching &&
+      session &&
+      !session.dragStarted &&
+      detailsOrderIdRef.current != null &&
+      !session.modalScrollStarted
+    ) {
+      const dy = y - session.startY;
+      const dx = Math.abs(x - session.startX);
+      const startedOnCloseRail = isModalCloseRailStart(session.startY);
+      const onModal =
+        isModalSheetTarget(session.startX, session.startY) ||
+        isModalSheetTarget(x, y) ||
+        !startedOnCloseRail;
+      if (
+        onModal &&
+        !startedOnCloseRail &&
+        Math.abs(dy) > MODAL_SCROLL_START_Y &&
+        Math.abs(dy) >= dx * 0.45
+      ) {
+        session.modalScrollStarted = true;
+        session.lastScrollFingerY = y;
+        dwellRef.current = { target: null, sinceMs: 0, anchorX: 0, anchorY: 0, armedAt: 0 };
+      }
+    }
+
+    if (pinching && session?.modalScrollStarted) {
+      const delta = y - (session.lastScrollFingerY ?? y);
+      session.lastScrollFingerY = y;
+      if (Math.abs(delta) > 0.5) {
+        scrollModalContentBy(delta);
+      }
+    }
+
+    if (
+      pinching &&
+      session &&
+      !session.dragStarted &&
+      !session.modalScrollStarted &&
+      !session.columnScrollStarted &&
+      detailsOrderIdRef.current == null &&
+      session.startOrderId == null &&
+      isColumnScrollTarget(session.startX, session.startY)
+    ) {
+      const dy = y - session.startY;
+      const dx = Math.abs(x - session.startX);
+      if (
+        Math.abs(dy) > COLUMN_SCROLL_START_Y &&
+        Math.abs(dy) >= dx * COLUMN_SCROLL_VERTICAL_RATIO
+      ) {
+        session.columnScrollStarted = true;
+        session.columnScrollEl = resolveColumnScrollElement(
+          session.startX,
+          session.startY
+        );
+        session.lastScrollFingerY = y;
+        dwellRef.current = { target: null, sinceMs: 0, anchorX: 0, anchorY: 0, armedAt: 0 };
+      }
+    }
+
+    if (pinching && session?.columnScrollStarted) {
+      const delta = y - (session.lastScrollFingerY ?? y);
+      session.lastScrollFingerY = y;
+      if (Math.abs(delta) > 0.5) {
+        scrollColumnContentBy(delta, session.columnScrollEl);
+      }
+    }
+
+    if (
+      pinching &&
+      session &&
+      !session.dragStarted &&
+      !session.modalScrollStarted &&
+      !session.columnScrollStarted &&
+      detailsOrderIdRef.current == null
+    ) {
+      const dx = Math.abs(x - session.startX);
+      const dy = Math.abs(y - session.startY);
+      const move = Math.hypot(dx, dy);
+      const dragMinMove = gestureSettingsApi.settingsRef.current.pinchDragMinMove;
+      const horizontalIntent = dx >= dy * 0.65;
+      if (
+        move >= dragMinMove &&
+        horizontalIntent &&
+        gestureDraggedOrderIdRef.current == null
+      ) {
+        tryStartGestureDrag(x, y, session) ||
+          tryStartGestureDrag(session.startX, session.startY, session);
+      }
+    }
+
+    if (!pinching && wasPinching) {
+      if (session?.dragStarted && gestureDraggedOrderIdRef.current != null) {
+        const draggedId = gestureDraggedOrderIdRef.current;
+        const targetStatus = resolveDropTarget(x, y);
+        const targetIndex = COLUMNS.findIndex((column) => column.key === targetStatus);
+        const order = ordersRef.current.find((o) => o.id === draggedId);
+        const currentIndex = COLUMNS.findIndex((column) => column.key === order?.status);
+
+        if (targetIndex !== -1 && currentIndex !== -1 && targetIndex !== currentIndex) {
+          handleDrop(draggedId, targetStatus);
+        }
+        setGestureDraggedOrderId(null);
+        handleDragStateChange(false, null);
+        handleDragPreviewEnd();
+      } else if (session) {
+        const move = Math.hypot(x - session.startX, y - session.startY);
+        const elapsed = Date.now() - session.startMs;
+        const isShortClick =
+          move <= GESTURE_CLICK_MAX_MOVE && elapsed <= GESTURE_CLICK_MAX_MS;
+
+        if (
+          !session.dragStarted &&
+          !session.modalScrollStarted &&
+          !session.columnScrollStarted &&
+          detailsOrderIdRef.current == null
+        ) {
+          dwellCooldownUntilRef.current =
+            Date.now() + gestureSettingsApi.settingsRef.current.dwellCooldownMs;
+        } else if (detailsOrderIdRef.current != null && isShortClick) {
+          const startX = session.startX;
+          const startY = session.startY;
+          if (isModalCloseZone(x, y, true) || isModalCloseZone(startX, startY, true)) {
+            closeDetailsModal();
+          }
         }
       }
+
+      pinchPickDoneRef.current = false;
+      pinchSessionRef.current = null;
     }
 
     pinchPrevRef.current = pinching;
+  };
+
+  const processGestureDwell = (x, y) => {
+    const pinching = gesture.pinchingRef.current;
+    const now = Date.now();
+    const cfg = gestureSettingsApi.settingsRef.current;
+
+    if (pinching || gestureDraggedOrderIdRef.current != null) {
+      dwellRef.current = { target: null, sinceMs: 0, anchorX: 0, anchorY: 0, armedAt: 0 };
+      return 0;
+    }
+
+    const ps = pointerStableRef.current;
+    if (Math.hypot(x - ps.x, y - ps.y) > cfg.dwellMaxMovePx) {
+      pointerStableRef.current = { x, y, sinceMs: now };
+    }
+
+    let dwellTarget = null;
+    let dwellMs = GESTURE_DWELL_CLOSE_MS;
+    let requiresArming = false;
+
+    if (detailsOrderIdRef.current != null) {
+      if (now < dwellCooldownUntilRef.current) {
+        dwellRef.current = { target: null, sinceMs: 0, anchorX: 0, anchorY: 0, armedAt: 0 };
+        return 0;
+      }
+      if (isModalCloseZone(x, y, true)) {
+        dwellTarget = "close";
+      }
+    } else if (cfg.openDetailsWithGesture) {
+      if (now < dwellCooldownUntilRef.current) {
+        dwellRef.current = { target: null, sinceMs: 0, anchorX: 0, anchorY: 0, armedAt: 0 };
+        return 0;
+      }
+      const orderId = findDetailsTriggerOrderId(x, y);
+      if (orderId != null) {
+        dwellTarget = orderId;
+        dwellMs = cfg.dwellOpenMs;
+        requiresArming = true;
+      }
+    }
+
+    if (dwellTarget == null) {
+      dwellRef.current = { target: null, sinceMs: 0, anchorX: 0, anchorY: 0, armedAt: 0 };
+      return 0;
+    }
+
+    const prev = dwellRef.current;
+    const sameTarget = prev.target === dwellTarget;
+    const moved = sameTarget
+      ? Math.hypot(x - prev.anchorX, y - prev.anchorY)
+      : cfg.dwellMaxMovePx + 1;
+
+    if (!sameTarget || moved > cfg.dwellMaxMovePx) {
+      dwellRef.current = {
+        target: dwellTarget,
+        sinceMs: now,
+        anchorX: x,
+        anchorY: y,
+        armedAt: 0,
+      };
+      return 0;
+    }
+
+    if (requiresArming) {
+      const stableMs = now - pointerStableRef.current.sinceMs;
+      if (stableMs < cfg.dwellArmingMs) {
+        return 0;
+      }
+      if (!prev.armedAt) {
+        dwellRef.current = { ...prev, armedAt: now };
+        return 0;
+      }
+    }
+
+    const countFrom = requiresArming ? prev.armedAt : prev.sinceMs;
+    const elapsed = now - countFrom;
+    if (elapsed >= dwellMs) {
+      if (dwellTarget === "close") {
+        closeDetailsModal();
+      } else {
+        setDetailsOrderId(dwellTarget);
+      }
+      dwellRef.current = { target: null, sinceMs: 0, anchorX: 0, anchorY: 0, armedAt: 0 };
+      return 0;
+    }
+
+    return Math.min(1, elapsed / dwellMs);
   };
 
   useEffect(() => {
@@ -565,9 +1058,6 @@ const OrderKanban = () => {
       if (!handVisible) {
         const dotHidden = cursorDotRef.current;
         if (dotHidden?.style) dotHidden.style.opacity = "0";
-        // Não cancela drag quando mão some brevemente (câmera perdendo tracking).
-        // O drag só cancela se a mão sumir por HAND_STABLE_OFF_FRAMES consecutivos
-        // (já tratado pelo HandStabilityGate dentro do hook).
         handWasVisibleRef.current = false;
         rafId = requestAnimationFrame(tick);
         return;
@@ -576,27 +1066,58 @@ const OrderKanban = () => {
       handWasVisibleRef.current = true;
 
       const { x, y } = gesture.cursorRef.current;
-      const bounds = boardBoundsRef.current;
-      const moveX = x - bounds.x;
 
-      processGesturePinch(x, y, moveX);
+      processGesturePinch(x, y);
+
+      const dwellProgress = processGestureDwell(x, y);
 
       applyDragPreviewTransform(x, y);
-      gestureScrollEdge(x);
+      if (detailsOrderIdRef.current == null) {
+        gestureScrollEdge(x);
+      }
 
       const dot = cursorDotRef.current;
       if (dot && isWeb && dot.style) {
-        const b = boardBoundsRef.current;
         const pinching = gesture.pinchingRef.current;
-        const size = pinching ? 24 : 20;
+        const cfg = gestureSettingsApi.settingsRef.current;
+        const overDetailsBtn =
+          detailsOrderIdRef.current == null &&
+          cfg.openDetailsWithGesture &&
+          findDetailsTriggerOrderId(x, y);
+        const overCard =
+          detailsOrderIdRef.current == null && findOrderIdAtPoint(x, y);
+        const overClose =
+          detailsOrderIdRef.current != null && isModalCloseZone(x, y, true);
+        const dwelling = !pinching && dwellProgress > 0;
+        const size = pinching ? 24 : dwelling ? 26 : overDetailsBtn || overClose ? 22 : 20;
         const half = size / 2;
-        dot.style.transform = `translate3d(${x - b.x - half}px, ${y - b.y - half}px, 0)`;
+
+        dot.style.position = "fixed";
+        dot.style.left = `${x - half}px`;
+        dot.style.top = `${y - half}px`;
+        dot.style.transform = "none";
+        dot.style.zIndex = "2147483646";
         dot.style.width = `${size}px`;
         dot.style.height = `${size}px`;
+        dot.style.borderWidth = dwelling || overDetailsBtn ? "3px" : "2px";
+        dot.style.borderColor =
+          pinching ? "#fff" : overClose ? "#FFEEE7" : overDetailsBtn ? "#25A066" : "#fff";
         dot.style.backgroundColor = pinching
           ? "rgba(196, 80, 40, 0.9)"
-          : "rgba(164, 112, 50, 0.85)";
+          : overClose
+            ? "rgba(196, 80, 40, 0.9)"
+            : overDetailsBtn
+              ? "rgba(37, 160, 102, 0.85)"
+              : overCard
+                ? "rgba(164, 112, 50, 0.85)"
+                : "rgba(164, 112, 50, 0.65)";
+        dot.style.boxShadow = dwelling
+          ? detailsOrderIdRef.current == null
+            ? `0 0 0 ${4 + dwellProgress * 10}px rgba(37, 160, 102, ${0.25 + dwellProgress * 0.45})`
+            : `0 0 0 ${4 + dwellProgress * 10}px rgba(196, 80, 40, ${0.25 + dwellProgress * 0.45})`
+          : "none";
         dot.style.opacity = "1";
+        dot.style.pointerEvents = "none";
       }
 
       rafId = requestAnimationFrame(tick);
@@ -610,11 +1131,15 @@ const OrderKanban = () => {
     if (!isGestureMode) {
       pinchPrevRef.current = false;
       pinchPickDoneRef.current = false;
+      pinchSessionRef.current = null;
+      dwellRef.current = { target: null, sinceMs: 0, anchorX: 0, anchorY: 0, armedAt: 0 };
       setGestureDraggedOrderId(null);
+      setDetailsOrderId(null);
+      modalScrollRef.current = null;
     }
   }, [isGestureMode]);
 
-  if (isLoading && orders.length === 0) {
+  if ((isLoading || isFetching) && orders.length === 0) {
     return (
       <View
         style={{
@@ -622,9 +1147,14 @@ const OrderKanban = () => {
           alignItems: "center",
           justifyContent: "center",
           backgroundColor: "#FFEEE7",
+          padding: 24,
+          gap: 16,
         }}
       >
         <ActivityIndicator size="large" color="#A47032" />
+        <Text style={{ color: "#103464", textAlign: "center" }}>
+          Carregando pedidos… A primeira vez pode levar até 1–2 minutos.
+        </Text>
       </View>
     );
   }
@@ -638,10 +1168,15 @@ const OrderKanban = () => {
           justifyContent: "center",
           backgroundColor: "#FFEEE7",
           padding: 16,
+          gap: 12,
         }}
       >
         <Text style={{ color: "#103464", textAlign: "center" }}>
           Erro ao carregar pedidos: {error?.message ?? "Tente novamente mais tarde."}
+        </Text>
+        <Text style={{ color: "#103464", textAlign: "center", fontSize: 13 }}>
+          Confira se a API Java está rodando em http://localhost:8080 e aguarde até 2 min na
+          primeira carga (muitos pedidos no banco).
         </Text>
       </View>
     );
@@ -676,7 +1211,7 @@ const OrderKanban = () => {
     <View
       ref={boardRef}
       onLayout={measureBoardBounds}
-      style={{ height: "80%", backgroundColor: "#FFEEE7" }}
+      style={{ flex: 1, width: "100%", minHeight: 0, backgroundColor: "#FFEEE7" }}
     >
       <View
         style={{
@@ -690,7 +1225,23 @@ const OrderKanban = () => {
         }}
       >
         <Text style={{ color: "#4a2f14", fontWeight: "700" }}>Modo de interação</Text>
-        <View style={{ flexDirection: "row", gap: 8 }}>
+        <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+          {isGestureMode && isWeb ? (
+            <Pressable
+              onPress={() => setGestureSettingsOpen(true)}
+              style={{
+                paddingVertical: 6,
+                paddingHorizontal: 10,
+                borderRadius: 999,
+                borderWidth: 1,
+                borderColor: "#A47032",
+                backgroundColor: "#fff",
+              }}
+              accessibilityLabel="Configurações de gestos"
+            >
+              <Text style={{ color: "#4a2f14", fontWeight: "600", fontSize: 13 }}>⚙</Text>
+            </Pressable>
+          ) : null}
           <Pressable
             onPress={() => setInteractionMode(INTERACTION_MODES.TOUCH)}
             style={{
@@ -726,14 +1277,20 @@ const OrderKanban = () => {
       {isGestureMode && (
         <View style={{ paddingHorizontal: 20, paddingBottom: 6, gap: 4 }}>
           <Text style={{ color: "#6b3f1a", fontSize: 12 }}>
-            Modo Gestos (beta): o detalhamento dos cards continua por clique/toque em{" "}
-            {"\""}Detalhes{"\""}.
+            {gestureSettingsApi.settings.openDetailsWithGesture
+              ? "Pinça + arraste = move card. Detalhes: aponte parado em cima do botão Detalhes."
+              : "Detalhes do pedido: toque em Detalhes. Pinça + arraste = move cards."}
+            {" "}Na coluna: pinça e arraste para cima/baixo para ver mais pedidos. No modal: mesma pinça para rolar.
           </Text>
           <Text style={{ color: "#4a2f14", fontSize: 12, fontWeight: "600" }}>
             {gesture.error
               ? `Câmera indisponível: ${gesture.error}`
               : gesture.tracking
-                ? "Aproxime o dedo das bordas da tela para rolar colunas. Pinça em um card para mover."
+                ? detailsOrderId != null
+                  ? "Modal aberto — pinça e arraste para rolar o conteúdo."
+                  : gestureSettingsApi.settings.openDetailsWithGesture
+                    ? "Aponte no card + pinça = arrastar na hora. Entre cards = pinça vertical. Borda = scroll."
+                    : "Aponte no card + pinça = arrastar. Entre cards = pinça vertical na lista. Detalhes por toque."
                 : "Inicializando tracking por câmera... (fallback toque ativo)"}
           </Text>
         </View>
@@ -741,63 +1298,84 @@ const OrderKanban = () => {
       <ScrollView
         ref={scrollRef}
         horizontal
-        style={{ flex: 1 }}
-        scrollEnabled={isGestureMode ? true : !isDraggingCard}
-        onLayout={(event) => {
-          viewportWidthRef.current = event.nativeEvent.layout.width;
-          measureBoardBounds();
+        dataSet={isWeb ? { boardScrollViewport: "true" } : undefined}
+        style={{
+          flex: 1,
+          ...(isWeb && !isGestureMode
+            ? { overflowX: isDraggingCard ? "hidden" : "auto", touchAction: "pan-x" }
+            : {}),
         }}
-        onScroll={(event) => {
-          scrollXRef.current = event.nativeEvent.contentOffset.x;
-        }}
+        scrollEnabled={isGestureMode || !isDraggingCard}
+        nestedScrollEnabled={false}
+        onLayout={handleBoardViewportLayout}
+        onScroll={handleBoardViewportScroll}
         scrollEventThrottle={16}
-        contentContainerStyle={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "center",
-          height: "100%",
-          gap: 20,
-          paddingHorizontal: 20,
-        }}
+        contentContainerStyle={{ flexGrow: 0 }}
       >
-        {COLUMNS.map((column, index) => (
-          <View
-            key={column.key}
-            dataSet={{ columnKey: column.key }}
-            onLayout={(event) => {
-              const { x, width } = event.nativeEvent.layout;
-              columnLayoutsRef.current[column.key] = { x, width };
-            }}
-            style={{
-              zIndex: groupedOrders[column.key]?.some((order) => order.id === draggingOrderId)
-                ? 500
-                : 1,
-              elevation: groupedOrders[column.key]?.some((order) => order.id === draggingOrderId)
-                ? 500
-                : 1,
-            }}
-          >
-            <KanbanColumn title={column.title}>
-              {groupedOrders[column.key]?.map((order) => (
-                <DraggableOrderCard
-                  key={order.id}
-                  order={order}
-                  columnIndex={index}
-                  columnsLength={COLUMNS.length}
-                  dragEnabled={dragEnabled}
-                  onDrop={handleDrop}
-                  onDragStateChange={handleDragStateChange}
-                  onDragMove={handleDragMove}
-                  getCurrentScrollX={() => scrollXRef.current}
-                  resolveTargetStatusFromMoveX={resolveTargetStatusFromMoveX}
-                  onDragPreviewStart={handleDragPreviewStart}
-                  onDragPreviewMove={handleDragPreviewMove}
-                  onDragPreviewEnd={handleDragPreviewEnd}
-                />
-              ))}
-            </KanbanColumn>
-          </View>
-        ))}
+        <View
+          ref={boardContentRef}
+          style={{
+            flexDirection: "row",
+            alignItems: "flex-start",
+            justifyContent: "flex-start",
+            flexGrow: 0,
+            minWidth: KANBAN_CONTENT_MIN_WIDTH,
+            gap: KANBAN_COLUMN_GAP,
+            paddingHorizontal: KANBAN_BOARD_PADDING_X,
+            paddingVertical: 8,
+          }}
+        >
+          {COLUMNS.map((column, index) => (
+            <View
+              key={column.key}
+              dataSet={{ columnKey: column.key }}
+              onLayout={(event) => {
+                const { x, width } = event.nativeEvent.layout;
+                columnLayoutsRef.current[column.key] = { x, width };
+              }}
+              style={{
+                width: KANBAN_COLUMN_WIDTH,
+                flexShrink: 0,
+                zIndex: groupedOrders[column.key]?.some(
+                  (order) => order.id === draggingOrderId
+                )
+                  ? 500
+                  : 1,
+                elevation: groupedOrders[column.key]?.some(
+                  (order) => order.id === draggingOrderId
+                )
+                  ? 500
+                  : 1,
+              }}
+            >
+              <KanbanColumn
+                title={column.title}
+                scrollEnabled={!isDraggingCard}
+                enableGestureScrollTarget={isGestureMode && isWeb}
+              >
+                {groupedOrders[column.key]?.map((order) => (
+                  <DraggableOrderCard
+                    key={order.id}
+                    order={order}
+                    columnIndex={index}
+                    columnsLength={COLUMNS.length}
+                    dragEnabled={dragEnabled}
+                    onDrop={handleDrop}
+                    onDragStateChange={handleDragStateChange}
+                    onDragMove={handleDragMove}
+                    getCurrentScrollX={() => scrollXRef.current}
+                    onResolveDropTarget={resolveDropTarget}
+                    onDragPreviewStart={handleDragPreviewStart}
+                    onDragPreviewMove={handleDragPreviewMove}
+                    onDragPreviewEnd={handleDragPreviewEnd}
+                    isGestureMode={isGestureMode}
+                    onOpenDetails={() => setDetailsOrderId(order.id)}
+                  />
+                ))}
+              </KanbanColumn>
+            </View>
+          ))}
+        </View>
       </ScrollView>
       {dragPreview && (
         <View
@@ -809,7 +1387,7 @@ const OrderKanban = () => {
             top: 0,
             zIndex: 9999,
             elevation: 9999,
-            ...(isGestureMode && gesture.tracking
+            ...(isWeb
               ? {}
               : {
                   transform: [
@@ -826,26 +1404,50 @@ const OrderKanban = () => {
           />
         </View>
       )}
-      {isGestureMode && gesture.tracking && (
-        <View
-          ref={cursorDotRef}
-          pointerEvents="none"
-          style={{
-            position: "absolute",
-            left: 0,
-            top: 0,
-            width: 20,
-            height: 20,
-            borderRadius: 999,
-            borderWidth: 2,
-            borderColor: "#fff",
-            backgroundColor: "rgba(164, 112, 50, 0.85)",
-            zIndex: 10000,
-            elevation: 10000,
-            willChange: "transform",
-          }}
-        />
-      )}
+      <GestureSettingsPanel
+        visible={gestureSettingsOpen}
+        onClose={() => setGestureSettingsOpen(false)}
+        settings={gestureSettingsApi.settings}
+        onUpdateField={gestureSettingsApi.updateField}
+        onApplyPreset={gestureSettingsApi.applyPreset}
+        onResetDefaults={gestureSettingsApi.resetDefaults}
+      />
+      {isGestureMode && detailsOrderId != null && selectedOrderRaw ? (
+        <Modal
+          visible
+          animationType="none"
+          transparent
+          onRequestClose={closeDetailsModal}
+        >
+          <OrderSummary
+            onClose={closeDetailsModal}
+            order={selectedOrderRaw}
+            enableGestureCloseTargets
+            onGestureScrollReady={handleModalGestureScrollReady}
+          />
+        </Modal>
+      ) : null}
+      {createPortal && isGestureMode && gesture.tracking && typeof document !== "undefined"
+        ? createPortal(
+            <View
+              ref={cursorDotRef}
+              pointerEvents="none"
+              style={{
+                position: "fixed",
+                left: 0,
+                top: 0,
+                width: 20,
+                height: 20,
+                borderRadius: 999,
+                borderWidth: 2,
+                borderColor: "#fff",
+                backgroundColor: "rgba(164, 112, 50, 0.85)",
+                zIndex: 2147483646,
+              }}
+            />,
+            document.body
+          )
+        : null}
     </View>
   );
 };
@@ -865,9 +1467,16 @@ DraggableOrderCard.propTypes = {
   onDragStateChange: PropTypes.func.isRequired,
   onDragMove: PropTypes.func.isRequired,
   getCurrentScrollX: PropTypes.func.isRequired,
-  resolveTargetStatusFromMoveX: PropTypes.func.isRequired,
+  onResolveDropTarget: PropTypes.func.isRequired,
   onDragPreviewStart: PropTypes.func.isRequired,
   onDragPreviewMove: PropTypes.func.isRequired,
   onDragPreviewEnd: PropTypes.func.isRequired,
+  isGestureMode: PropTypes.bool,
+  onOpenDetails: PropTypes.func,
+};
+
+DraggableOrderCard.defaultProps = {
+  isGestureMode: false,
+  onOpenDetails: undefined,
 };
 

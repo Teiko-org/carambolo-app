@@ -1,6 +1,5 @@
 import { PINCH_CLOSE_THRESHOLD, PINCH_OPEN_THRESHOLD } from "./gestureContracts";
 
-/** Histerese: evita pinça piscando entre aberto/fechado. */
 export class PinchGate {
   constructor() {
     this.active = false;

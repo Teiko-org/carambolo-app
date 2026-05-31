@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import PropTypes from "prop-types";
+import { useTranslation } from "react-i18next";
 import caramboloImage from "../assets/carambolo.png";
 import bannerCarambolo from "../assets/bannerCarambolo.png";
 import bannerFornada from "../assets/bannerFornada.png";
@@ -28,10 +29,10 @@ import { useFornada } from "../hooks/useFornada";
 const { width } = Dimensions.get("window");
 const CARD_SIZE = (width - 48) / 3;
 
-const NAV_ITEMS = [
-  { label: "Produtos", route: "/Products", image: produtosImage },
-  { label: "Pedidos", route: "/OrderKanban", image: pedidosImage },
-  { label: "Dashboard", route: "/Dashboard", image: dashboardImage },
+const getNavItems = (t) => [
+  { label: t("home.nav.products"), route: "/Products", image: produtosImage },
+  { label: t("home.nav.orders"), route: "/OrderKanban", image: pedidosImage },
+  { label: t("home.nav.dashboard"), route: "/Dashboard", image: dashboardImage },
 ];
 
 function NavCard({ label, image, onPress }) {
@@ -101,6 +102,8 @@ TimerBlock.propTypes = {
 export default function HomeScreen() {
   const router = useRouter();
   const { timeLeft } = useFornada();
+  const { t } = useTranslation();
+  const NAV_ITEMS = getNavItems(t);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
@@ -126,7 +129,7 @@ export default function HomeScreen() {
           <View style={styles.searchBox}>
             <TextInput
               style={styles.searchInput}
-              placeholder="O que está procurando?"
+              placeholder={t("home.searchPlaceholder")}
               placeholderTextColor="#999"
             />
             <Image source={lupaImage} style={styles.searchIconImage} resizeMode="contain" />
@@ -137,11 +140,9 @@ export default function HomeScreen() {
           <Image source={fundoBolos} style={styles.fundoBolosImage} resizeMode="cover" />
           <Image source={bannerCarambolo} style={styles.kurokoBannerImage} resizeMode="contain" />
           <View style={styles.kurokoTitleRow}>
-            <Text style={styles.kurokoTitle}>Kuroko Assistant</Text>
+            <Text style={styles.kurokoTitle}>{t("home.kurokoTitle")}</Text>
           </View>
-          <Text style={styles.kurokoSubtitle}>
-            Fale para analisar os dados do{"\n"}seu negócio
-          </Text>
+          <Text style={styles.kurokoSubtitle}>{t("home.kurokoSubtitle")}</Text>
           <TouchableOpacity
             style={styles.kurokoCtaWrap}
             activeOpacity={0.85}
@@ -153,7 +154,7 @@ export default function HomeScreen() {
               end={{ x: 1, y: 1 }}
               style={styles.kurokoCtaGradient}
             >
-              <Text style={styles.kurokoCtaText}>Conversar com Assistant</Text>
+              <Text style={styles.kurokoCtaText}>{t("home.kurokoCtaText")}</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -162,18 +163,18 @@ export default function HomeScreen() {
           <Image source={bannerFornada} style={styles.countdownBannerImage} resizeMode="cover" />
           {timeLeft && !timeLeft.expired && (
             <View style={timerStyles.overlay}>
-              <TimerBlock value={timeLeft.days} label="DIAS" />
+              <TimerBlock value={timeLeft.days} label={t("home.timer.days")} />
             </View>
           )}
           {timeLeft?.expired && (
             <View style={timerStyles.overlay}>
-              <Text style={timerStyles.expiredText}>Encerrada</Text>
+              <Text style={timerStyles.expiredText}>{t("home.timerExpired")}</Text>
             </View>
           )}
         </View>
 
         <View style={styles.sectionTitleWrap}>
-          <Text style={styles.sectionTitle}>O que deseja visualizar?</Text>
+          <Text style={styles.sectionTitle}>{t("home.sectionTitle")}</Text>
         </View>
 
         <View style={styles.navGrid}>

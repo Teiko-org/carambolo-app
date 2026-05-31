@@ -1,4 +1,5 @@
 import { Modal, Pressable, StatusBar, Text, TextInput, View } from "react-native";
+import "../services/i18n"; // inicializa i18n antes de qualquer tela
 import { Slot, usePathname } from "expo-router";
 import { useState } from "react";
 import ButtonSideMenu from "../components/atoms/ButtonSideMenu/ButtonSideMenu";
@@ -158,7 +159,9 @@ export default function Layout() {
           </View>
         )}
 
-        <Slot />
+        <View style={{ flex: 1, minHeight: 0, width: "100%" }}>
+          <Slot />
+        </View>
 
         {!hideSideMenu && (
           <View
