@@ -3,7 +3,7 @@ import { useEffect, useState } from "react"
 import styles from "./Select.styles"
 import { Dropdown } from "react-native-element-dropdown"
 
-const Select = ({ defaultValue, options, selectedValue, setSelectedValue }) => {
+const Select = ({ defaultValue, options, selectedValue, setSelectedValue, placeholder, placeholderStyle }) => {
     const getNormalizedValue = (value) => {
         if (value && typeof value === "object" && "value" in value) {
             return value.value
@@ -32,6 +32,8 @@ const Select = ({ defaultValue, options, selectedValue, setSelectedValue }) => {
             value={selectedValue ?? internalSelectedValue}
             onChange={(optionValue) => onSelectValueChange(optionValue.value)}
             style={styles.select}
+            placeholder={placeholder}
+            placeholderStyle={placeholderStyle ?? styles.placeholder}
         />
     )
 }
@@ -54,6 +56,8 @@ Select.propTypes = {
     ).isRequired,
     selectedValue: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     setSelectedValue: PropTypes.func,
+    placeholder: PropTypes.string,
+    placeholderStyle: PropTypes.object,
 }
 
 export default Select

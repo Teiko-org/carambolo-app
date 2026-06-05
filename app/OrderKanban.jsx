@@ -23,6 +23,7 @@ import OrderSummary from "../components/organisms/OrderSummary/OrderSummary";
 import { useOrders } from "../hooks/useOrderKanban";
 import { updateOrderStatus } from "../services/orderKanbanService";
 import { useWebGestureCursor } from "../hooks/useWebGestureCursor";
+import { useOrderFilter } from "../contexts/orderFilterContext";
 import { useGestureSettings } from "../hooks/useGestureSettings";
 import GestureSettingsPanel from "../components/molecules/GestureSettingsPanel/GestureSettingsPanel";
 
@@ -311,7 +312,8 @@ const DraggableOrderCard = ({
 };
 
 const OrderKanban = () => {
-  const { data, isLoading, isError, error, isFetching } = useOrders();
+  const { month, year } = useOrderFilter();
+  const { data, isLoading, isError, error, isFetching } = useOrders({ month, year });
   const queryClient = useQueryClient();
   const [interactionMode, setInteractionMode] = useState(INTERACTION_MODES.TOUCH);
   const [isDraggingCard, setIsDraggingCard] = useState(false);
@@ -357,6 +359,40 @@ const OrderKanban = () => {
     if (!Array.isArray(data)) return [];
     return data.map(normalizeOrder);
   }, [data]);
+
+  const filterPeriodMessage = useMemo(() => {
+    if (!month && !year) return null;
+
+    const monthNames = [
+      "Janeiro",
+      "Fevereiro",
+      "Março",
+      "Abril",
+      "Maio",
+      "Junho",
+      "Julho",
+      "Agosto",
+      "Setembro",
+      "Outubro",
+      "Novembro",
+      "Dezembro",
+    ];
+
+    const monthNumber = Number(month);
+    const monthName = monthNumber >= 1 && monthNumber <= 12 ? monthNames[monthNumber - 1] : null;
+
+    if (monthName && year) {
+      return `Pedidos não encontrados no período de ${monthName}/${year}`;
+    }
+    if (year) {
+      return `Pedidos não encontrados no ano de ${year}`;
+    }
+    return monthName
+      ? `Pedidos não encontrados no período de ${monthName}`
+      : `Pedidos não encontrados no período de ${month}`;
+  }, [month, year]);
+
+  const showFilteredEmptyState = !isLoading && !isError && orders.length === 0 && !!filterPeriodMessage;
 
   ordersRef.current = orders;
 
@@ -1141,6 +1177,31 @@ const OrderKanban = () => {
         <Text style={{ color: "#103464", textAlign: "center", fontSize: 13 }}>
           Confira se a API Java está rodando em http://localhost:8080 e aguarde até 2 min na
           primeira carga (muitos pedidos no banco).
+        </Text>
+      </View>
+    );
+  }
+
+  if (showFilteredEmptyState) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#FFEEE7",
+          padding: 24,
+        }}
+      >
+        <Text
+          style={{
+            color: "#4a2f14",
+            fontSize: 16,
+            fontWeight: "700",
+            textAlign: "center",
+          }}
+        >
+          {filterPeriodMessage}
         </Text>
       </View>
     );
