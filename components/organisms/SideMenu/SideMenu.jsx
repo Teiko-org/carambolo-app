@@ -29,7 +29,6 @@ const getNavItems = (t) => [
         text: t("sideMenu.nav.importHistory"),
         route: "/ImportarDados",
         selectedKey: "Importar histórico de pedidos",
-        compact: true,
     },
 ];
 
