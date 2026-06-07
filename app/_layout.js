@@ -1,7 +1,7 @@
 import { Modal, Pressable, StatusBar, Text, TextInput, View } from "react-native";
 import "../services/i18n"; // inicializa i18n antes de qualquer tela
 import { Slot, usePathname } from "expo-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ButtonSideMenu from "../components/atoms/ButtonSideMenu/ButtonSideMenu";
 import Select from "../components/atoms/Select/Select";
 import SideMenu from "../components/organisms/SideMenu/SideMenu";
@@ -12,6 +12,15 @@ const queryClient = new QueryClient();
 
 const HIDE_CHROME_ROUTES = ["/Assistant", "/"];
 const HIDE_SIDEMENU_ROUTES = ["/Assistant"];
+
+const ROUTE_TO_SELECTED_KEY = {
+  "/": "Home",
+  "/OrderKanban": "Pedidos",
+  "/Products": "Produtos",
+  "/Dashboard": "Dashboard",
+  "/ImportarDados": "Importar histórico de pedidos",
+  "/Assistant": "Assistente",
+};
 
 export default function Layout() {
   const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
@@ -24,6 +33,12 @@ export default function Layout() {
   const closeSideMenu = () => setIsSideMenuOpen(false);
 
   const [selected, setSelected] = useState("Dashboard");
+
+  // Sincroniza o selected com a rota atual
+  useEffect(() => {
+    const selectedKey = ROUTE_TO_SELECTED_KEY[pathname] || "Dashboard";
+    setSelected(selectedKey);
+  }, [pathname]);
 
   const hideChrome = HIDE_CHROME_ROUTES.includes(pathname);
   const hideSideMenu = HIDE_SIDEMENU_ROUTES.includes(pathname);
