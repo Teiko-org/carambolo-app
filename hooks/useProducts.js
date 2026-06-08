@@ -113,6 +113,7 @@ export const useProducts = () => {
         descricao: item?.descricao ?? "",
         isAtivo: item?.ativo ?? item?.isAtivo ?? true,
         type: "fornada",
+        imageUrl: item?.imagens?.[0]?.url ?? null,
       }
     })
 
@@ -136,6 +137,7 @@ export const useProducts = () => {
       descricao: item?.observacao ?? "",
       isAtivo: item?.isAtivo ?? true,
       type: "decoracao",
+      imageUrl: item?.imagens?.[0] ?? null
     }))
 
     const products = [...fornadaProducts, ...bolosProducts, ...decoracoesProducts]

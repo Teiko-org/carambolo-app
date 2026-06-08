@@ -1,17 +1,63 @@
 import PropTypes from "prop-types"
-import { View, Text, Modal } from "react-native"
+import { View, Text, Modal, Pressable } from "react-native"
 import styles from "./OrderCard.styles"
 import Button from "../../atoms/Button/Button"
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import OrderSummary from "../../organisms/OrderSummary/OrderSummary";
 
-const OrderCard = ({ order, deliveryDate, orderId }) => {
+const OrderCard = ({
+    order,
+    deliveryDate,
+    orderId,
+    isGestureMode,
+    onOpenDetails,
+    onLoadDetails,
+}) => {
 
-    const [isOrderSummaryOpen, setIsOrderSummaryOpen] = useState(false);
+    const [localDetailsOpen, setLocalDetailsOpen] = useState(false);
+    const [detailOrder, setDetailOrder] = useState(null);
+    const [loadingDetail, setLoadingDetail] = useState(false);
+    const [detailError, setDetailError] = useState(null);
 
-    const openModal = () => setIsOrderSummaryOpen(true);
+    const closeModal = useCallback(() => {
+        setLocalDetailsOpen(false);
+        setDetailOrder(null);
+        setDetailError(null);
+        setLoadingDetail(false);
+    }, []);
 
-    const closeModal = () => setIsOrderSummaryOpen(false);
+    const openModal = useCallback(async () => {
+        if (isGestureMode) {
+            onOpenDetails?.();
+            return;
+        }
+
+        setLocalDetailsOpen(true);
+        setDetailError(null);
+
+        if (onLoadDetails) {
+            setDetailOrder(null);
+            setLoadingDetail(true);
+            try {
+                const loaded = await onLoadDetails();
+                setDetailOrder(loaded);
+            } catch (e) {
+                console.warn("[OrderCard] Falha ao carregar detalhes:", e);
+                setDetailError("Não foi possível carregar este pedido. Tente de novo.");
+            } finally {
+                setLoadingDetail(false);
+            }
+            return;
+        }
+
+        setDetailOrder(order.raw ?? null);
+    }, [isGestureMode, onOpenDetails, onLoadDetails, order.raw]);
+
+    const detailsTriggerProps = isGestureMode
+        ? { dataSet: { orderDetailsTrigger: String(orderId) } }
+        : {};
+
+    const summaryOrder = onLoadDetails ? detailOrder : order.raw;
 
     return (
         <View style={styles.container}>
@@ -40,18 +86,32 @@ const OrderCard = ({ order, deliveryDate, orderId }) => {
                     {order.price}
                 </Text>
 
-                <Button variant="secondary" title="Detalhes" size="small" onPress={openModal} />
+                <Pressable
+                    {...detailsTriggerProps}
+                    onPress={openModal}
+                    accessibilityRole="button"
+                    accessibilityLabel="Detalhes do pedido"
+                >
+                    <Button variant="secondary" title="Detalhes" size="small" onPress={openModal} />
+                </Pressable>
 
             </View>
 
-            <Modal
-                visible={isOrderSummaryOpen}
-                animationType="none"
-                transparent={true}
-                onRequestClose={closeModal}
-            >
-                <OrderSummary onClose={closeModal} order={order.raw} />
-            </Modal>
+            {!isGestureMode ? (
+                <Modal
+                    visible={localDetailsOpen}
+                    animationType="none"
+                    transparent={true}
+                    onRequestClose={closeModal}
+                >
+                    <OrderSummary
+                        onClose={closeModal}
+                        order={summaryOrder}
+                        isLoading={loadingDetail}
+                        loadError={detailError}
+                    />
+                </Modal>
+            ) : null}
 
         </View>
     )
@@ -68,6 +128,15 @@ OrderCard.propTypes = {
     }).isRequired,
     deliveryDate: PropTypes.string,
     orderId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    isGestureMode: PropTypes.bool,
+    onOpenDetails: PropTypes.func,
+    onLoadDetails: PropTypes.func,
+}
+
+OrderCard.defaultProps = {
+    isGestureMode: false,
+    onOpenDetails: undefined,
+    onLoadDetails: undefined,
 }
 
 export default OrderCard

@@ -8,7 +8,6 @@ const ButtonSideMenuItem = ({
     text,
     selected = false,
     setSelected,
-    exit = false,
     route = "",
     compact = false,
     isAssistantCta = false,
@@ -31,10 +30,10 @@ const ButtonSideMenuItem = ({
     return (
         <Pressable
             onPress={handlePress}
-            style={styles(selected, exit, compact, isAssistantCta).button}
+            style={styles(selected, compact, isAssistantCta).button}
         >
             {icon}
-            <Text style={styles(selected, exit, compact, isAssistantCta).text}>
+            <Text style={styles(selected, compact, isAssistantCta).text}>
                 {text}
             </Text>
         </Pressable>
@@ -46,7 +45,6 @@ ButtonSideMenuItem.propTypes = {
     text: PropTypes.string.isRequired,
     selected: PropTypes.bool,
     setSelected: PropTypes.func.isRequired,
-    exit: PropTypes.bool,
     route: PropTypes.string,
     compact: PropTypes.bool,
     isAssistantCta: PropTypes.bool,

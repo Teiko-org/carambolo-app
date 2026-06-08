@@ -1,0 +1,4 @@
+export const MIN_HAND_SCORE = 0;
+export const MIN_HAND_DETECTION_CONFIDENCE = 0.5;
+export const MIN_HAND_PRESENCE_CONFIDENCE = 0.5;
+export const MIN_HAND_TRACKING_CONFIDENCE = 0.5;

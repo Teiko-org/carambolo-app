@@ -1,9 +1,28 @@
 import api from "./api/api";
 
-export const getOrders = async () => {
+export const getOrders = async ({ month, year } = {}) => {
   console.log("Buscando pedidos do back-end");
-  const { data } = await api.get("/bolos/pedido/completo");
+  const params = {};
+
+  const yearIsValid = year?.length === 4 && !Number.isNaN(Number(year));
+  const monthNumber = month?.length > 0 ? Number(month) : undefined;
+  const monthIsValid = monthNumber >= 1 && monthNumber <= 12;
+
+  if (yearIsValid) {
+    params.ano = Number(year);
+  }
+
+  if (monthIsValid) {
+    params.mes = monthNumber;
+  }
+
+  const { data } = await api.get("/bolos/pedido/completo", { params });
   console.log(data);
+
+  if (!Array.isArray(data)) {
+    console.warn("[Kanban] Resposta inesperada de /bolos/pedido/completo:", data);
+    return [];
+  }
   return data;
 };
 

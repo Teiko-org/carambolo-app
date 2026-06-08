@@ -14,6 +14,7 @@ import {
 import { X } from "lucide-react-native"
 import PropTypes from "prop-types"
 import { useAddProduct } from "../../../hooks/useAddProduct"
+import PhotoPicker from "../../atoms/PhotoPicker/PhotoPicker"
 import styles from "./AddProductModal.styles"
 
 const TIPOS = ["Fornada", "Decoracao"]
@@ -23,21 +24,25 @@ const AddProductModal = ({ visible, onClose, onSuccess }) => {
     const [descricao, setDescricao] = useState("")
     const [valor, setValor] = useState("")
     const [categoriaFornada, setCategoriaFornada] = useState("")
+    const [fornadaPhoto, setFornadaPhoto] = useState(null)
 
     const [nomeDecoracao, setNomeDecoracao] = useState("")
     const [categoriaDecoracao, setCategoriaDecoracao] = useState("")
     const [observacoesDecoracao, setObservacoesDecoracao] = useState("")
     const [adicionaisSelecionados, setAdicionaisSelecionados] = useState([])
+const [decoracaoPhoto, setDecoracaoPhoto] = useState(null)
 
     const resetFields = () => {
         setProduto("")
         setDescricao("")
         setValor("")
         setCategoriaFornada("")
+        setFornadaPhoto(null)
         setNomeDecoracao("")
         setCategoriaDecoracao("")
         setObservacoesDecoracao("")
         setAdicionaisSelecionados([])
+        setDecoracaoPhoto(null)
     }
 
     const { tipo, setTipo, adicionais, submit, isLoading } = useAddProduct({
@@ -75,7 +80,7 @@ const AddProductModal = ({ visible, onClose, onSuccess }) => {
                 Alert.alert("Atenção", "Preencha o valor do produto.")
                 return
             }
-            submit({ produto, descricao, valor, categoria: categoriaFornada })
+            submit({ produto, descricao, valor, categoria: categoriaFornada, photo: fornadaPhoto })
         } else {
             if (!nomeDecoracao.trim()) {
                 Alert.alert("Atenção", "Preencha o nome da decoração.")
@@ -86,6 +91,7 @@ const AddProductModal = ({ visible, onClose, onSuccess }) => {
                 categoria: categoriaDecoracao,
                 observacao: observacoesDecoracao,
                 adicionais: adicionaisSelecionados,
+                photo: decoracaoPhoto,
             })
         }
     }
@@ -153,6 +159,15 @@ const AddProductModal = ({ visible, onClose, onSuccess }) => {
                                     </View>
 
                                     <View style={styles.field}>
+                                        <Text style={styles.label}>Foto do Produto</Text>
+                                        <PhotoPicker
+                                            photo={fornadaPhoto}
+                                           onPhotoSelected={setFornadaPhoto}
+                                            placeholder="Adicionar foto do produto"
+                                        />
+                                    </View>
+
+                                    <View style={styles.field}>
                                         <Text style={styles.label}>Categoria</Text>
                                         <TextInput
                                             style={styles.input}
@@ -187,6 +202,15 @@ const AddProductModal = ({ visible, onClose, onSuccess }) => {
                                             onChangeText={setNomeDecoracao}
                                             placeholder="Digite o nome da decoração"
                                             placeholderTextColor="#B0A09A"
+                                        />
+                                    </View>
+
+                                    <View style={styles.field}>
+                                        <Text style={styles.label}>Foto da Decoração</Text>
+                                        <PhotoPicker
+                                            photo={decoracaoPhoto}
+                                            onPhotoSelected={setDecoracaoPhoto}
+                                            placeholder="Adicionar foto da decoração"
                                         />
                                     </View>
 
@@ -269,3 +293,4 @@ AddProductModal.propTypes = {
     onClose: PropTypes.func.isRequired,
     onSuccess: PropTypes.func,
 }
+

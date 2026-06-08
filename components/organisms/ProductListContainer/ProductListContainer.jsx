@@ -27,6 +27,7 @@ const ProductListContainer = ({
                             name={product.name}
                             quantity={product.quantity}
                             isAtivo={product.isAtivo}
+                            imageUrl={product.imageUrl}
                             onToggle={() => onToggleStatus(product)}
                         />
                     ))

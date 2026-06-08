@@ -1,14 +1,15 @@
 import PropTypes from "prop-types";
 import {
-  Pressable,
-  View,
-  Image,
-  Text,
-  Animated,
-  Dimensions,
-  Platform,
+    Pressable,
+    View,
+    Image,
+    Text,
+    Animated,
+    Dimensions,
+    Platform,
 } from "react-native";
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import styles from "./SideMenu.styles";
 import ButtonSideMenuItem from "../../atoms/ButtonSideMenuItem/ButtonSideMenuItem";
 import ButtonSideMenu from "../../atoms/ButtonSideMenu/ButtonSideMenu";
@@ -19,24 +20,26 @@ const { width: screenWidth } = Dimensions.get("window");
 const PANEL_WIDTH = screenWidth * 0.72;
 const useNativeDriver = Platform.OS !== "web";
 
-const NAV_ITEMS = [
-    { text: "Home", route: "/", selectedKey: "Home" },
-    { text: "Pedidos", route: "/OrderKanban", selectedKey: "Pedidos" },
-    { text: "Produtos", route: "/Products", selectedKey: "Produtos" },
-    { text: "Dashboard", route: "/Dashboard", selectedKey: "Dashboard" },
+const getNavItems = (t) => [
+    { text: t("sideMenu.nav.home"), route: "/", selectedKey: "Home" },
+    { text: t("sideMenu.nav.orders"), route: "/OrderKanban", selectedKey: "Pedidos" },
+    { text: t("sideMenu.nav.products"), route: "/Products", selectedKey: "Produtos" },
+    { text: t("sideMenu.nav.dashboard"), route: "/Dashboard", selectedKey: "Dashboard" },
     { text: "Mapa de Entregas", route: "/DeliveriesMap", selectedKey: "Mapa de Entregas" },
-   {
-    text: "Importar histórico de pedidos",
-    route: "/ImportarDados",
-    selectedKey: "Importar histórico de pedidos",
-    compact: true,
-}
+    {
+        text: t("sideMenu.nav.importHistory"),
+        route: "/ImportarDados",
+        selectedKey: "Importar hist�rico de pedidos",
+        compact: true,
+    },
 ];
 
 const SideMenu = ({ onClose, selected, setSelected }) => {
     const slideX = useRef(new Animated.Value(-PANEL_WIDTH)).current;
     const backdropOpacity = useRef(new Animated.Value(0)).current;
     const [isClosing, setIsClosing] = useState(false);
+    const { t } = useTranslation();
+    const NAV_ITEMS = getNavItems(t);
 
     useEffect(() => {
         setIsClosing(false);
@@ -92,7 +95,7 @@ const SideMenu = ({ onClose, selected, setSelected }) => {
                     <View style={styles.header}>
                         <View style={styles.greetingRow}>
                             <Image source={iconUser} style={styles.userIcon} resizeMode="contain" />
-                            <Text style={styles.greetingText}>Olá, Carambolo!</Text>
+                            <Text style={styles.greetingText}>{t("sideMenu.greeting")}</Text>
                         </View>
 
                         <View style={styles.menuList}>
@@ -113,14 +116,14 @@ const SideMenu = ({ onClose, selected, setSelected }) => {
                     <View style={styles.assistantBlock}>
                         {/* Texto ocupa largura total */}
                         <Text style={styles.assistantDescription}>
-                            Fale com o Kuroko para analisar os dados do seu negócio e identificar tendências para apoiar suas decisões.
+                            {t("sideMenu.assistantDescription")}
                         </Text>
 
                         {/* Botão + ícone lado a lado */}
                         <View style={styles.assistantRow}>
                             <View style={styles.assistantButtonWrap}>
                                 <ButtonSideMenuItem
-                                    text="Conversar com Assistente"
+                                    text={t("sideMenu.assistantCta")}
                                     setSelected={setSelected}
                                     selected={selected == "Assistente"}
                                     route="/Assistant"

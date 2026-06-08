@@ -1,0 +1,30 @@
+{
+  "home": {
+    "searchPlaceholder": "O que está procurando?",
+    "kurokoTitle": "Kuroko Assistant",
+    "kurokoSubtitle": "Fale para analisar os dados do\nseu negócio",
+    "kurokoCtaText": "Conversar com Assistant",
+    "sectionTitle": "O que deseja visualizar?",
+    "timerExpired": "Encerrada",
+    "nav": {
+      "products": "Produtos",
+      "orders": "Pedidos",
+      "dashboard": "Dashboard"
+    },
+    "timer": {
+      "days": "DIAS"
+    }
+  },
+  "sideMenu": {
+    "greeting": "Olá, Carambolo!",
+    "assistantDescription": "Fale com o Kuroko para analisar os dados do seu negócio e identificar tendências para apoiar suas decisões.",
+    "assistantCta": "Conversar com Assistente",
+    "nav": {
+      "home": "Home",
+      "orders": "Pedidos",
+      "products": "Produtos",
+      "dashboard": "Dashboard",
+      "importHistory": "Importar histórico de pedidos"
+    }
+  }
+}

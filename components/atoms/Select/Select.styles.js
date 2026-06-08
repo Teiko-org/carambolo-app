@@ -8,11 +8,17 @@ const styles = StyleSheet.create({
         borderRadius: 100,
         backgroundColor: "#FFFFFF",
         height: 40,
-        width: '45%',
+        width: '100%',
         display: 'flex',
-        flexDirection: 'column',
+        flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center'
+        justifyContent: 'flex-start',
+        paddingHorizontal: 12,
+    },
+    placeholder: {
+        color: "#5E5E5E",
+        fontWeight: "700",
+        textAlign: "left"
     }
 })
 

@@ -25,7 +25,7 @@ export const useChatStorage = () => {
         JSON.stringify({ sessionId, messages })
       );
     } catch {
-      /* storage write failed silently */
+      return;
     }
   }, []);
 
@@ -33,7 +33,7 @@ export const useChatStorage = () => {
     try {
       await AsyncStorage.removeItem(STORAGE_KEY);
     } catch {
-      /* storage clear failed silently */
+      return;
     }
   }, []);
 
