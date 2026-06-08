@@ -20,13 +20,19 @@ const Products = () => {
 		toggleStatus({ id, type, isAtivo: !isAtivo })
 	}
 
-	const [modalVisible, setModalVisible] = useState(false)
+
+const [modalVisible, setModalVisible] = useState(false)
 	const [toastVisible, setToastVisible] = useState(false)
 
 	const showToast = () => {
 		setToastVisible(true)
 		setTimeout(() => setToastVisible(false), 3000)
 	}
+
+	const handleSuccess = () => {
+    showToast()
+}
+
 
 	if (isLoading) {
 		return (
@@ -128,7 +134,7 @@ const Products = () => {
 			<AddProductModal
 				visible={modalVisible}
 				onClose={() => setModalVisible(false)}
-				onSuccess={showToast}
+				onSuccess={handleSuccess}
 			/>
 		</View>
 	)

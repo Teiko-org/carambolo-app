@@ -32,6 +32,23 @@ const styles = StyleSheet.create({
     quantityInactive: {
         color: "#A0A0A0",
     },
-})
+    thumbnail: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    marginRight: 8,
+},
+thumbnailPlaceholder: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    marginRight: 8,
+    backgroundColor: "#F0E0D0",
+    justifyContent: "center",
+    alignItems: "center",
+},
+thumbnailPlaceholderText: {
+    fontSize: 18,
+} })
 
 export default styles
