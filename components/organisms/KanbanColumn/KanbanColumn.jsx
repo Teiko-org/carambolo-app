@@ -11,7 +11,12 @@ const KanbanColumn = ({
     children,
     scrollEnabled = true,
     enableGestureScrollTarget = false,
+    columnKey,
+    onColumnScrollRef,
+    onColumnScrollAreaLayout,
+    onColumnScrollOffset,
 }) => {
+    const scrollRef = useRef(null);
     const viewportHeightRef = useRef(0);
     const [scrollHint, setScrollHint] = useState({ canScrollDown: false, canScrollUp: false });
 
@@ -32,6 +37,23 @@ const KanbanColumn = ({
         ? { dataSet: { columnScroll: "true" } }
         : {};
 
+    const registerScrollRef = useCallback(
+        (node) => {
+            scrollRef.current = node;
+            if (columnKey && onColumnScrollRef) {
+                onColumnScrollRef(columnKey, node);
+            }
+        },
+        [columnKey, onColumnScrollRef]
+    );
+
+    const measureScrollArea = useCallback(() => {
+        if (!enableGestureScrollTarget || !columnKey || !onColumnScrollAreaLayout) return;
+        scrollRef.current?.measureInWindow?.((x, y, width, height) => {
+            onColumnScrollAreaLayout(columnKey, { x, y, width, height });
+        });
+    }, [columnKey, enableGestureScrollTarget, onColumnScrollAreaLayout]);
+
     return (
         <View
             style={{
@@ -48,6 +70,7 @@ const KanbanColumn = ({
 
             <View style={styles.background}>
                 <ScrollView
+                    ref={registerScrollRef}
                     {...columnScrollProps}
                     style={styles.container}
                     contentContainerStyle={{ gap: 10, paddingBottom: 4 }}
@@ -57,6 +80,7 @@ const KanbanColumn = ({
                     onLayout={(event) => {
                         const layoutHeight = event.nativeEvent.layout.height;
                         viewportHeightRef.current = layoutHeight;
+                        measureScrollArea();
                     }}
                     onContentSizeChange={(_, contentHeight) => {
                         updateScrollHint(0, contentHeight, viewportHeightRef.current);
@@ -69,6 +93,10 @@ const KanbanColumn = ({
                             contentSize.height,
                             layoutMeasurement.height
                         );
+                        if (columnKey && onColumnScrollOffset) {
+                            onColumnScrollOffset(columnKey, contentOffset.y);
+                        }
+                        measureScrollArea();
                     }}
                 >
                     {children}
@@ -93,11 +121,19 @@ KanbanColumn.propTypes = {
     children: PropTypes.node,
     scrollEnabled: PropTypes.bool,
     enableGestureScrollTarget: PropTypes.bool,
+    columnKey: PropTypes.string,
+    onColumnScrollRef: PropTypes.func,
+    onColumnScrollAreaLayout: PropTypes.func,
+    onColumnScrollOffset: PropTypes.func,
 }
 
 KanbanColumn.defaultProps = {
     scrollEnabled: true,
     enableGestureScrollTarget: false,
+    columnKey: undefined,
+    onColumnScrollRef: undefined,
+    onColumnScrollAreaLayout: undefined,
+    onColumnScrollOffset: undefined,
 }
 
 export default KanbanColumn
