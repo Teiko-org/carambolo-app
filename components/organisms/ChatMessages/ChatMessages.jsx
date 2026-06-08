@@ -1,7 +1,8 @@
 import PropTypes from "prop-types";
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import { FlatList, View, Text, Animated, Platform } from "react-native";
+import { FlatList, View, Text, Animated, Platform, Pressable } from "react-native";
+import { ChevronDown } from "lucide-react-native";
 import ChatBubble from "../../atoms/ChatBubble/ChatBubble";
 import ConfirmationActions from "../../molecules/ConfirmationActions/ConfirmationActions";
 import MessageActions from "../../molecules/MessageActions/MessageActions";
@@ -63,6 +64,91 @@ const TypingIndicator = () => (
   </View>
 );
 
+const JumpToBottomFab = ({ visible, onPress }) => {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(12)).current;
+  const mountedRef = useRef(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    if (visible) {
+      mountedRef.current = true;
+      setMounted(true);
+      opacity.setValue(0);
+      translateY.setValue(12);
+      Animated.parallel([
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 260,
+          useNativeDriver: useNative,
+        }),
+        Animated.spring(translateY, {
+          toValue: 0,
+          useNativeDriver: useNative,
+          damping: 20,
+          stiffness: 260,
+          mass: 0.7,
+        }),
+      ]).start();
+      return undefined;
+    }
+
+    if (!mountedRef.current) return undefined;
+
+    const hide = Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: useNative,
+      }),
+      Animated.timing(translateY, {
+        toValue: 12,
+        duration: 200,
+        useNativeDriver: useNative,
+      }),
+    ]);
+
+    hide.start(({ finished }) => {
+      if (finished) {
+        mountedRef.current = false;
+        setMounted(false);
+      }
+    });
+
+    return () => hide.stop();
+  }, [visible, opacity, translateY]);
+
+  if (!mounted) return null;
+
+  return (
+    <Animated.View
+      style={[
+        styles.jumpToBottomBtn,
+        {
+          opacity,
+          transform: [{ translateY }],
+        },
+      ]}
+      pointerEvents={visible ? "auto" : "none"}
+    >
+      <Pressable
+        onPress={onPress}
+        style={styles.jumpToBottomPressable}
+        accessibilityRole="button"
+        accessibilityLabel="Ir para a última mensagem"
+        hitSlop={8}
+      >
+        <ChevronDown size={22} color="#A47032" strokeWidth={2.5} />
+      </Pressable>
+    </Animated.View>
+  );
+};
+
+JumpToBottomFab.propTypes = {
+  visible: PropTypes.bool.isRequired,
+  onPress: PropTypes.func.isRequired,
+};
+
 const ChatMessages = ({
   messages,
   loading,
@@ -72,8 +158,17 @@ const ChatMessages = ({
   historyReady,
 }) => {
   const flatListRef = useRef(null);
+  const isNearBottomRef = useRef(true);
+  const lastScrolledMessageIdRef = useRef(null);
+  const [showJumpToBottom, setShowJumpToBottom] = useState(false);
   const lastMessageId =
     messages.length > 0 ? messages[messages.length - 1].id : null;
+  const NEAR_BOTTOM_PX = 120;
+
+  const setPinnedToBottom = useCallback((pinned) => {
+    isNearBottomRef.current = pinned;
+    setShowJumpToBottom(!pinned);
+  }, []);
 
   const scrollToBottom = useCallback((animated = false) => {
     const list = flatListRef.current;
@@ -89,29 +184,72 @@ const ChatMessages = ({
     requestAnimationFrame(run);
     if (Platform.OS === "web") {
       setTimeout(run, 50);
-      setTimeout(run, 200);
     }
   }, [messages.length]);
 
+  const scrollToBottomIfPinned = useCallback(
+    (animated = false) => {
+      if (isNearBottomRef.current) {
+        scrollToBottom(animated);
+      }
+    },
+    [scrollToBottom]
+  );
+
+  const handleScroll = useCallback((event) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const visibleHeight = layoutMeasurement.height;
+    const contentHeight = contentSize.height;
+    if (contentHeight <= visibleHeight + 1) {
+      setPinnedToBottom(true);
+      return;
+    }
+    const distanceFromBottom =
+      contentHeight - visibleHeight - contentOffset.y;
+    const nearBottom = distanceFromBottom <= NEAR_BOTTOM_PX;
+    isNearBottomRef.current = nearBottom;
+    setShowJumpToBottom((prev) => {
+      const next = !nearBottom;
+      return prev === next ? prev : next;
+    });
+  }, [setPinnedToBottom]);
+
+  const handleJumpToBottom = useCallback(() => {
+    setPinnedToBottom(true);
+    scrollToBottom(true);
+  }, [scrollToBottom, setPinnedToBottom]);
+
   useFocusEffect(
     useCallback(() => {
+      setPinnedToBottom(true);
       scrollToBottom(false);
-    }, [scrollToBottom, lastMessageId])
+    }, [scrollToBottom, setPinnedToBottom])
   );
 
   useEffect(() => {
+    if (lastMessageId == null) return;
+    if (lastScrolledMessageIdRef.current === lastMessageId) return;
+    lastScrolledMessageIdRef.current = lastMessageId;
+    setPinnedToBottom(true);
     scrollToBottom(false);
-  }, [lastMessageId, scrollToBottom]);
+  }, [lastMessageId, scrollToBottom, setPinnedToBottom]);
 
   useEffect(() => {
     if (historyReady) {
+      setPinnedToBottom(true);
       scrollToBottom(false);
     }
-  }, [historyReady, scrollToBottom]);
+  }, [historyReady, scrollToBottom, setPinnedToBottom]);
+
+  useEffect(() => {
+    if (loading) {
+      scrollToBottomIfPinned(false);
+    }
+  }, [loading, scrollToBottomIfPinned]);
 
   const handleContentSizeChange = useCallback(() => {
-    scrollToBottom(false);
-  }, [scrollToBottom]);
+    scrollToBottomIfPinned(false);
+  }, [scrollToBottomIfPinned]);
 
   const renderItem = ({ item }) => {
     const showActions =
@@ -156,9 +294,12 @@ const ChatMessages = ({
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
         onContentSizeChange={handleContentSizeChange}
+        ListFooterComponent={loading ? TypingIndicator : null}
       />
-      {loading && <TypingIndicator />}
+      <JumpToBottomFab visible={showJumpToBottom} onPress={handleJumpToBottom} />
     </View>
   );
 };
