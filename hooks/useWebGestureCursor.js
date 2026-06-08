@@ -225,12 +225,20 @@ export function useWebGestureCursor(enabled, settingsRef) {
     };
   }, [enabled, activeSettingsRef]);
 
+  const noopTracker = () => null;
+
   return {
-    supported,
+    supported: Platform.OS === "web" && supported,
+    platformSupported: Platform.OS === "web",
     tracking,
     error,
+    showPermissionPrompt: false,
+    permissionLoading: false,
+    requestCameraPermission: async () => false,
+    dismissPermissionPrompt: () => {},
     pinchingRef,
     cursorRef,
     handVisibleRef,
+    GestureTracker: noopTracker,
   };
 }

@@ -1,46 +1,8 @@
 import axios from "axios";
-import { Platform } from "react-native";
-import Constants from "expo-constants";
+import { resolveDevBaseUrl } from "./resolveDevBaseUrl";
 
-const getExpoHost = () => {
-  const hostUri =
-    Constants?.expoConfig?.hostUri ||
-    Constants?.manifest2?.extra?.expoClient?.hostUri;
-
-  if (!hostUri) {
-    return null;
-  }
-
-  const host = hostUri.split(":")[0];
-
-  if (!host || host.includes("exp.direct")) {
-    return null;
-  }
-
-  return host;
-};
-
-const getAiApiBaseUrl = () => {
-  if (__DEV__ && Platform.OS === "web") {
-    return "http://localhost:8000";
-  }
-
-  const envUrl = process.env.EXPO_PUBLIC_AI_API_URL?.trim();
-  if (envUrl) {
-    return envUrl;
-  }
-
-  const expoHost = getExpoHost();
-  if (expoHost) {
-    return `http://${expoHost}:8000`;
-  }
-
-  if (Platform.OS === "android") {
-    return "http://10.0.2.2:8000";
-  }
-
-  return "http://localhost:8000";
-};
+const getAiApiBaseUrl = () =>
+  resolveDevBaseUrl(process.env.EXPO_PUBLIC_AI_API_URL, 8000);
 
 const AI_REQUEST_TIMEOUT_MS = 120000;
 
@@ -56,4 +18,5 @@ if (__DEV__) {
   console.log("[AI API] baseURL:", aiApi.defaults.baseURL);
 }
 
+export { getAiApiBaseUrl };
 export default aiApi;
