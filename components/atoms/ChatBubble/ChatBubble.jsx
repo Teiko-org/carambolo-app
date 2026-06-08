@@ -3,14 +3,14 @@ import { Text, View, TouchableOpacity, Linking, Platform } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Download } from "lucide-react-native";
 import SparkleIcon from "../SparkleIcon/SparkleIcon";
+import { getApiBaseUrl } from "../../../services/api/api";
 import { styles } from "./ChatBubble.styles";
 
-const BACKEND_BASE_URL = "http://localhost:8080";
-
 const buildUrl = (endpoint) => {
-  if (!endpoint) return BACKEND_BASE_URL;
+  const base = getApiBaseUrl();
+  if (!endpoint) return base;
   if (/^https?:\/\//i.test(endpoint)) return endpoint;
-  return `${BACKEND_BASE_URL}${endpoint.startsWith("/") ? "" : "/"}${endpoint}`;
+  return `${base}${endpoint.startsWith("/") ? "" : "/"}${endpoint}`;
 };
 
 const AttachmentButton = ({ attachment }) => {

@@ -2,7 +2,7 @@ import PropTypes from "prop-types"
 import { View, Text, Modal, Pressable } from "react-native"
 import styles from "./OrderCard.styles"
 import Button from "../../atoms/Button/Button"
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import OrderSummary from "../../organisms/OrderSummary/OrderSummary";
 
 const OrderCard = ({
@@ -12,12 +12,21 @@ const OrderCard = ({
     isGestureMode,
     onOpenDetails,
     onLoadDetails,
+    onDetailsButtonLayout,
 }) => {
 
     const [localDetailsOpen, setLocalDetailsOpen] = useState(false);
     const [detailOrder, setDetailOrder] = useState(null);
     const [loadingDetail, setLoadingDetail] = useState(false);
     const [detailError, setDetailError] = useState(null);
+    const detailsButtonRef = useRef(null);
+
+    const reportDetailsBounds = useCallback(() => {
+        if (!onDetailsButtonLayout) return;
+        detailsButtonRef.current?.measureInWindow?.((x, y, width, height) => {
+            onDetailsButtonLayout({ x, y, width, height });
+        });
+    }, [onDetailsButtonLayout]);
 
     const closeModal = useCallback(() => {
         setLocalDetailsOpen(false);
@@ -87,8 +96,10 @@ const OrderCard = ({
                 </Text>
 
                 <Pressable
+                    ref={detailsButtonRef}
                     {...detailsTriggerProps}
                     onPress={openModal}
+                    onLayout={reportDetailsBounds}
                     accessibilityRole="button"
                     accessibilityLabel="Detalhes do pedido"
                 >
@@ -131,12 +142,14 @@ OrderCard.propTypes = {
     isGestureMode: PropTypes.bool,
     onOpenDetails: PropTypes.func,
     onLoadDetails: PropTypes.func,
+    onDetailsButtonLayout: PropTypes.func,
 }
 
 OrderCard.defaultProps = {
     isGestureMode: false,
     onOpenDetails: undefined,
     onLoadDetails: undefined,
+    onDetailsButtonLayout: undefined,
 }
 
 export default OrderCard

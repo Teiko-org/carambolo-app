@@ -2,16 +2,30 @@ export class StablePinchGate {
   constructor() {
     this.active = false;
     this.openFrames = 0;
+    this.closeFrames = 0;
   }
 
-  update(rawDistance, closeThreshold, openThreshold, openFramesNeeded = 3) {
+  update(
+    rawDistance,
+    closeThreshold,
+    openThreshold,
+    openFramesNeeded = 3,
+    closeFramesNeeded = 2
+  ) {
     if (!this.active) {
       if (rawDistance < closeThreshold) {
-        this.active = true;
-        this.openFrames = 0;
+        this.closeFrames += 1;
+        if (this.closeFrames >= closeFramesNeeded) {
+          this.active = true;
+          this.openFrames = 0;
+          this.closeFrames = 0;
+        }
+      } else {
+        this.closeFrames = 0;
       }
     } else if (rawDistance > openThreshold) {
       this.openFrames += 1;
+      this.closeFrames = 0;
       if (this.openFrames >= openFramesNeeded) {
         this.active = false;
         this.openFrames = 0;
@@ -25,5 +39,6 @@ export class StablePinchGate {
   reset() {
     this.active = false;
     this.openFrames = 0;
+    this.closeFrames = 0;
   }
 }
