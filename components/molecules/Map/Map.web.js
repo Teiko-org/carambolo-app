@@ -3,7 +3,6 @@
 import { useRef, useEffect, useState, forwardRef, useImperativeHandle } from 'react';
 import { View, StyleSheet } from 'react-native';
 
-// ── HTML do Leaflet (executado dentro do iframe) ──────────
 const buildLeafletHTML = (initialRegion) => `
 <!DOCTYPE html>
 <html>
@@ -33,7 +32,7 @@ const buildLeafletHTML = (initialRegion) => `
     window.addEventListener('message', function(event) {
       try {
         var msg = JSON.parse(event.data);
-        
+
         if (msg.type === 'SET_MARKERS' && Array.isArray(msg.markers)) {
           map.eachLayer(function(layer) {
             if (layer instanceof L.Marker) map.removeLayer(layer);
@@ -80,17 +79,64 @@ const buildLeafletHTML = (initialRegion) => `
             map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
           }
         }
-        
+
         if (msg.type === 'FOCUS_MARKER' && msg.latitude && msg.longitude) {
-          map.setView([msg.latitude, msg.longitude], 16);
+          var toRemove = [];
           map.eachLayer(function(layer) {
-            if (layer instanceof L.Marker) {
+            if (layer instanceof L.Marker && layer._isTempFocus) {
+              toRemove.push(layer);
+            }
+          });
+          toRemove.forEach(function(l) { map.removeLayer(l); });
+
+          var targetLayer = null;
+          map.eachLayer(function(layer) {
+            if (layer instanceof L.Marker && !layer._isTempFocus) {
               var latlng = layer.getLatLng();
               if (Math.abs(latlng.lat - msg.latitude) < 0.001 && Math.abs(latlng.lng - msg.longitude) < 0.001) {
-                layer.openPopup();
+                targetLayer = layer;
               }
             }
           });
+
+          if (!targetLayer) {
+            var label = msg.label || 'Entrega';
+            var address = msg.address || '';
+            var statusColor = {
+              'PENDENTE': '#f59e0b',
+              'PAGO': '#3b82f6',
+              'CONCLUIDO': '#10b981',
+              'CANCELADO': '#ef4444',
+            }[msg.status] || '#A47032';
+
+            var pinIcon = L.divIcon({
+              className: '',
+              html: '<div style="position:relative;display:flex;flex-direction:column;align-items:center;pointer-events:none;">'
+                  + '<div style="background:' + statusColor + ';color:#fff;font-family:system-ui,sans-serif;font-size:12px;font-weight:700;white-space:nowrap;padding:4px 10px;border-radius:12px;border:2px solid #103464;box-shadow:0 2px 8px rgba(0,0,0,0.4);">' + label + '</div>'
+                  + '<div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:12px solid ' + statusColor + ';margin-top:-1px;filter:drop-shadow(0 2px 2px rgba(0,0,0,0.2));"></div>'
+                  + '</div>',
+              iconSize: [1, 1],
+              iconAnchor: [0, 0],
+              popupAnchor: [0, -50],
+            });
+
+            var popupContent = '<div style="font-family:system-ui,sans-serif;min-width:200px;padding:4px;">'
+              + '<div style="font-weight:700;font-size:15px;color:#103464;margin-bottom:4px;">' + label + '</div>'
+              + (address ? '<div style="font-size:12px;color:#555;margin-bottom:4px;">' + String.fromCodePoint(0x1F4CD) + ' ' + address + '</div>' : '')
+              + (msg.status ? '<span style="background:' + statusColor + ';color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;">' + msg.status + '</span>' : '')
+              + '</div>';
+
+            targetLayer = L.marker([msg.latitude, msg.longitude], { icon: pinIcon })
+              .bindPopup(popupContent, { maxWidth: 300 });
+            targetLayer._isTempFocus = true;
+            targetLayer.addTo(map);
+          }
+
+          map.setView([msg.latitude, msg.longitude], 16, { animate: true, duration: 0.5 });
+          setTimeout(function() {
+            map.invalidateSize();
+            if (targetLayer) targetLayer.openPopup();
+          }, 600);
         }
       } catch(e) { console.error('Leaflet message error:', e); }
     });
@@ -101,17 +147,15 @@ const buildLeafletHTML = (initialRegion) => `
 </html>
 `;
 
-// ── MapView (Web) ─────────────────────────────────────────
-const MapView = forwardRef(({ children, style, initialRegion, deliveries, provider, ...rest }, ref) => {
+const MapView = forwardRef(({ children, style, initialRegion, deliveries, resolvedCoords, provider }, ref) => {
   const iframeRef = useRef(null);
   const [mapReady, setMapReady] = useState(false);
 
-  // Expor a função focusMarker imperativamente via ref
   useImperativeHandle(ref, () => ({
-    focusMarker: (latitude, longitude) => {
+    focusMarker: (latitude, longitude, label, address, status) => {
       if (iframeRef.current && iframeRef.current.contentWindow) {
         iframeRef.current.contentWindow.postMessage(
-          JSON.stringify({ type: 'FOCUS_MARKER', latitude, longitude }),
+          JSON.stringify({ type: 'FOCUS_MARKER', latitude, longitude, label: label || '', address: address || '', status: status || '' }),
           '*'
         );
       }
@@ -125,7 +169,6 @@ const MapView = forwardRef(({ children, style, initialRegion, deliveries, provid
     longitudeDelta: 0.1,
   };
 
-  // Ouvir MAP_READY do iframe
   useEffect(() => {
     const handler = (event) => {
       try {
@@ -133,21 +176,29 @@ const MapView = forwardRef(({ children, style, initialRegion, deliveries, provid
         if (msg.type === 'MAP_READY') {
           setMapReady(true);
         }
-      } catch (e) { /* ignorar */ }
+      } catch (e) {}
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
   }, []);
 
-  // Enviar marcadores ao iframe quando o mapa estiver pronto e os dados mudarem
   useEffect(() => {
     if (mapReady && deliveries && iframeRef.current && iframeRef.current.contentWindow) {
+      const markers = deliveries.map(d => {
+        const key = d.resumoPedidoId ?? d.enderecoCompleto;
+        const coords = resolvedCoords?.[key];
+        return {
+          ...d,
+          latitude: d.latitude ?? coords?.lat ?? null,
+          longitude: d.longitude ?? coords?.lng ?? null,
+        };
+      });
       iframeRef.current.contentWindow.postMessage(
-        JSON.stringify({ type: 'SET_MARKERS', markers: deliveries }),
+        JSON.stringify({ type: 'SET_MARKERS', markers }),
         '*'
       );
     }
-  }, [mapReady, deliveries]);
+  }, [mapReady, deliveries, resolvedCoords]);
 
   return (
     <View style={[webStyles.container, style]}>
@@ -168,7 +219,6 @@ const MapView = forwardRef(({ children, style, initialRegion, deliveries, provid
 
 MapView.displayName = 'MapView';
 
-// ── Marker e Callout stubs (necessários para manter compatibilidade com o nativo) ──
 const Marker = () => null;
 const Callout = () => null;
 const PROVIDER_GOOGLE = "google";
