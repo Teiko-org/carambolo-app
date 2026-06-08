@@ -59,13 +59,20 @@ export const updateBoloStatus = async (id, isAtivo) => {
   }
 }
 
-export const createFornada = async ({ produto, descricao, valor, categoria }) => {
+export const createFornada = async ({ produto, descricao, valor, categoria, photo }) => {
   try {
     const formData = new FormData()
     formData.append("produto", produto)
     formData.append("descricao", descricao)
     formData.append("valor", valor)
     formData.append("categoria", categoria)
+    if (photo) {
+      formData.append("imagens", {
+        uri: photo.uri,
+        type: photo.type || "image/jpeg",
+        name: photo.fileName || `fornada-${Date.now()}.jpg`,
+      })
+    }
     const { data } = await api.post("/fornadas/produto-fornada", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     })
@@ -96,7 +103,7 @@ export const getDecoracoes = async () => {
   }
 }
 
-export const createDecoracao = async ({ nome, categoria, observacao, adicionais }) => {
+export const createDecoracao = async ({ nome, categoria, observacao, adicionais, photo }) => {
   try {
     const formData = new FormData()
     formData.append("nome", nome)
@@ -104,6 +111,13 @@ export const createDecoracao = async ({ nome, categoria, observacao, adicionais 
     if (categoria) formData.append("categoria", categoria)
     if (adicionais && adicionais.length > 0) {
       formData.append("adicionais", adicionais.map((a) => a.id).join(","))
+    }
+    if (photo) {
+      formData.append("imagens", {
+        uri: photo.uri,
+        type: photo.type || "image/jpeg",
+        name: photo.fileName || `decoracao-${Date.now()}.jpg`,
+      })
     }
     const { data } = await api.post("/decoracoes", formData, {
       headers: { "Content-Type": "multipart/form-data" },
