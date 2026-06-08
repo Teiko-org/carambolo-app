@@ -61,6 +61,7 @@ const OrderSummary = ({
     loadError = null,
     enableGestureCloseTargets = false,
     onGestureScrollReady,
+    onGestureAreasLayout,
 }) => {
     const isFornada = order?.tipoProduto === "FORNADA";
     const displayId = order?.resumoPedidoId ?? order?.id;
@@ -92,7 +93,19 @@ const OrderSummary = ({
     const dragY = useRef(new Animated.Value(0)).current;
     const scrollRef = useRef(null);
     const scrollOffsetRef = useRef(0);
+    const closeRailRef = useRef(null);
+    const sheetRef = useRef(null);
     const isClosingRef = useRef(false);
+
+    const reportGestureAreas = useCallback(() => {
+        if (!enableGestureCloseTargets || !onGestureAreasLayout) return;
+        closeRailRef.current?.measureInWindow?.((x, y, width, height) => {
+            onGestureAreasLayout({ closeRail: { x, y, width, height } });
+        });
+        sheetRef.current?.measureInWindow?.((x, y, width, height) => {
+            onGestureAreasLayout({ sheet: { x, y, width, height } });
+        });
+    }, [enableGestureCloseTargets, onGestureAreasLayout]);
 
     const sheetTranslateY = useMemo(
         () => Animated.add(slideY, dragY),
@@ -227,6 +240,8 @@ const OrderSummary = ({
 
             {enableGestureCloseTargets ? (
                 <Pressable
+                    ref={closeRailRef}
+                    onLayout={reportGestureAreas}
                     onPress={handleClose}
                     style={styles.gestureCloseRail}
                     accessibilityRole="button"
@@ -265,7 +280,12 @@ const OrderSummary = ({
                     maxHeight: "82%",
                 }}
             >
-                <View style={styles.sheetSurface} {...sheetSurfaceProps}>
+                <View
+                    ref={sheetRef}
+                    onLayout={reportGestureAreas}
+                    style={styles.sheetSurface}
+                    {...sheetSurfaceProps}
+                >
 
                     <View style={styles.header} {...sheetPanResponder.panHandlers}>
 
@@ -602,6 +622,7 @@ OrderSummary.propTypes = {
     loadError: PropTypes.string,
     enableGestureCloseTargets: PropTypes.bool,
     onGestureScrollReady: PropTypes.func,
+    onGestureAreasLayout: PropTypes.func,
 }
 
 export default OrderSummary

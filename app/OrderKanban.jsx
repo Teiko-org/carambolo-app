@@ -7,8 +7,11 @@ import {
   Animated,
   PanResponder,
   Pressable,
+  TouchableOpacity,
   Platform,
   Modal,
+  Dimensions,
+  Alert,
 } from "react-native";
 import PropTypes from "prop-types";
 
@@ -22,10 +25,21 @@ import OrderCard from "../components/molecules/OrderCard/OrderCard";
 import OrderSummary from "../components/organisms/OrderSummary/OrderSummary";
 import { useOrders } from "../hooks/useOrderKanban";
 import { updateOrderStatus } from "../services/orderKanbanService";
-import { useWebGestureCursor } from "../hooks/useWebGestureCursor";
+import { useGestureCursor } from "../hooks/useGestureCursor";
+import {
+  createGestureHitTest,
+  measureViewInWindow,
+} from "../hooks/gesture/gestureHitTest";
 import { useOrderFilter } from "../contexts/orderFilterContext";
 import { useGestureSettings } from "../hooks/useGestureSettings";
 import GestureSettingsPanel from "../components/molecules/GestureSettingsPanel/GestureSettingsPanel";
+import GestureCameraPermissionModal from "../components/molecules/GestureCameraPermissionModal/GestureCameraPermissionModal";
+import GestureErrorBoundary from "../components/molecules/GestureErrorBoundary/GestureErrorBoundary";
+import {
+  canPickOrderForKanban,
+  getKanbanTransitionErrorMessage,
+  normalizeKanbanStatus,
+} from "../utils/kanbanStatusRules";
 
 const COLUMNS = [
   { key: "CANCELADO", title: "Pedidos Cancelados" },
@@ -45,7 +59,9 @@ const MAX_SCROLL_STEP = 7;
 const GESTURE_DWELL_CLOSE_MS = 550;
 const GESTURE_CLICK_MAX_MS = 650;
 const GESTURE_CLICK_MAX_MOVE = 35;
-const MODAL_SCROLL_START_Y = 4;
+const MODAL_SCROLL_START_Y = 2;
+const MODAL_SCROLL_VERTICAL_RATIO = 0.28;
+const MODAL_SCROLL_GAIN = 3.2;
 const COLUMN_SCROLL_START_Y = 22;
 const COLUMN_SCROLL_VERTICAL_RATIO = 1.15;
 const KANBAN_COLUMN_GAP = 20;
@@ -56,7 +72,7 @@ const KANBAN_CONTENT_MIN_WIDTH =
   KANBAN_BOARD_PADDING_X * 2;
 const isWeb = Platform.OS === "web";
 
-const findOrderIdAtPoint = (x, y) => {
+const findOrderIdAtPointWeb = (x, y) => {
   if (!isWeb || typeof document === "undefined") return null;
   let node = document.elementFromPoint(x, y);
   while (node) {
@@ -78,7 +94,7 @@ const findColumnKeyAtPoint = (x, y) => {
   return null;
 };
 
-const isColumnScrollTarget = (x, y) => {
+const isColumnScrollTargetWeb = (x, y) => {
   if (!isWeb || typeof document === "undefined") return false;
   let node = document.elementFromPoint(x, y);
   while (node) {
@@ -88,7 +104,7 @@ const isColumnScrollTarget = (x, y) => {
   return false;
 };
 
-const resolveColumnScrollElement = (x, y) => {
+const resolveColumnScrollTargetWeb = (x, y) => {
   if (!isWeb || typeof document === "undefined") return null;
   let node = document.elementFromPoint(x, y);
   while (node) {
@@ -98,13 +114,23 @@ const resolveColumnScrollElement = (x, y) => {
   return null;
 };
 
-const scrollColumnContentBy = (deltaY, el) => {
+const scrollColumnContentByWeb = (deltaY, el) => {
   if (!deltaY || !el || typeof el.scrollTop !== "number") return;
   const maxScroll = Math.max(0, el.scrollHeight - el.clientHeight);
   el.scrollTop = Math.min(maxScroll, Math.max(0, el.scrollTop + deltaY));
 };
 
-const findDetailsTriggerOrderId = (x, y) => {
+const scrollColumnContentByNative = (deltaY, columnKey, columnScrollRefsRef, columnScrollYRef) => {
+  if (!deltaY || !columnKey) return;
+  const scrollView = columnScrollRefsRef.current[columnKey];
+  if (!scrollView) return;
+  const current = columnScrollYRef.current[columnKey] ?? 0;
+  const next = Math.max(0, current + deltaY);
+  columnScrollYRef.current[columnKey] = next;
+  scrollView.scrollTo?.({ y: next, animated: false });
+};
+
+const findDetailsTriggerOrderIdWeb = (x, y) => {
   if (!isWeb || typeof document === "undefined") return null;
   let node = document.elementFromPoint(x, y);
   while (node) {
@@ -115,7 +141,7 @@ const findDetailsTriggerOrderId = (x, y) => {
   return null;
 };
 
-const isModalCloseTarget = (x, y) => {
+const isModalCloseTargetWeb = (x, y) => {
   if (!isWeb || typeof document === "undefined") return false;
   let node = document.elementFromPoint(x, y);
   while (node) {
@@ -125,17 +151,16 @@ const isModalCloseTarget = (x, y) => {
   return false;
 };
 
-const isModalCloseZone = (x, y, modalOpen) => {
-  if (!modalOpen) return false;
-  if (isModalCloseTarget(x, y)) return true;
-  if (typeof window !== "undefined") {
-    const h = window.innerHeight || 0;
-    if (h > 0 && y <= h * 0.2) return true;
-  }
-  return false;
+const isModalCloseRailStart = (y) => {
+  const h = isWeb
+    ? typeof window !== "undefined"
+      ? window.innerHeight || 0
+      : 0
+    : Dimensions.get("window").height;
+  return h > 0 && y <= h * 0.18;
 };
 
-const isModalSheetTarget = (x, y) => {
+const isModalSheetTargetWeb = (x, y) => {
   if (!isWeb || typeof document === "undefined") return false;
   let node = document.elementFromPoint(x, y);
   while (node) {
@@ -144,12 +169,6 @@ const isModalSheetTarget = (x, y) => {
     node = node.parentElement;
   }
   return false;
-};
-
-const isModalCloseRailStart = (y) => {
-  if (typeof window === "undefined") return false;
-  const h = window.innerHeight || 0;
-  return h > 0 && y <= h * 0.18;
 };
 
 const formatDate = (dateString) => {
@@ -166,7 +185,7 @@ const normalizeOrder = (raw) => {
   return {
     id,
     resumoPedidoId,
-    status: raw?.status ?? "PENDENTE",
+    status: normalizeKanbanStatus(raw?.status),
     name: raw?.nomeCliente ?? "Cliente",
     phone: raw?.telefoneCliente ?? "",
     type: raw?.tipoEntrega ?? "",
@@ -190,11 +209,37 @@ const DraggableOrderCard = ({
   onDragPreviewMove,
   onDragPreviewEnd,
   isGestureMode,
+  gestureDragActiveId,
   onOpenDetails,
+  onGestureCardLayout,
+  onGestureDetailsLayout,
+  onGestureCardRef,
 }) => {
   const position = useRef(new Animated.ValueXY()).current;
   const [isDragging, setIsDragging] = useState(false);
   const dragStartScrollXRef = useRef(0);
+  const cardWrapperRef = useRef(null);
+
+  const measureCardBounds = useCallback(() => {
+    if (!isGestureMode || isWeb || !onGestureCardLayout) return;
+    measureViewInWindow(cardWrapperRef.current, (bounds) => {
+      onGestureCardLayout(order.id, bounds);
+    });
+  }, [isGestureMode, onGestureCardLayout, order.id]);
+
+  useEffect(() => {
+    if (!isGestureMode || isWeb) return undefined;
+    onGestureCardRef?.(order.id, cardWrapperRef.current);
+    return () => onGestureCardRef?.(order.id, null);
+  }, [isGestureMode, onGestureCardRef, order.id]);
+
+  const handleDetailsButtonLayout = useCallback(
+    (bounds) => {
+      if (!isGestureMode || isWeb || !onGestureDetailsLayout) return;
+      onGestureDetailsLayout(order.id, bounds);
+    },
+    [isGestureMode, onGestureDetailsLayout, order.id]
+  );
 
   const resetPosition = () => {
     Animated.spring(position, {
@@ -286,6 +331,8 @@ const DraggableOrderCard = ({
 
   return (
     <Animated.View
+      ref={cardWrapperRef}
+      onLayout={measureCardBounds}
       dataSet={{
         orderId: String(order.id),
         orderStatus: String(order.status ?? ""),
@@ -296,7 +343,13 @@ const DraggableOrderCard = ({
         zIndex: isDragging ? 999 : 1,
         elevation: isDragging ? 999 : 1,
         position: "relative",
-        opacity: isDragging ? 0 : 1,
+        opacity:
+          isDragging || (isGestureMode && gestureDragActiveId === order.id)
+            ? 0
+            : canPickOrderForKanban(order.status)
+              ? 1
+              : 0.88,
+        ...(isWeb && !canPickOrderForKanban(order.status) ? { cursor: "default" } : {}),
       }}
       {...panResponder.panHandlers}
     >
@@ -306,6 +359,7 @@ const DraggableOrderCard = ({
         orderId={order.id}
         isGestureMode={isGestureMode}
         onOpenDetails={onOpenDetails}
+        onDetailsButtonLayout={handleDetailsButtonLayout}
       />
     </Animated.View>
   );
@@ -313,6 +367,10 @@ const DraggableOrderCard = ({
 
 const OrderKanban = () => {
   const { month, year } = useOrderFilter();
+  const ordersQueryKey = useMemo(
+    () => ["orders", month || null, year || null],
+    [month, year]
+  );
   const { data, isLoading, isError, error, isFetching } = useOrders({ month, year });
   const queryClient = useQueryClient();
   const [interactionMode, setInteractionMode] = useState(INTERACTION_MODES.TOUCH);
@@ -325,6 +383,7 @@ const OrderKanban = () => {
   const boardContentRef = useRef(null);
   const scrollXRef = useRef(0);
   const viewportWidthRef = useRef(0);
+  const scrollViewportOriginRef = useRef({ x: 0, y: 0, width: 0 });
   const boardBoundsRef = useRef({ x: 0, y: 0, width: 0, height: 0 });
   const columnLayoutsRef = useRef({});
   const edgeHoverRef = useRef({
@@ -345,14 +404,187 @@ const OrderKanban = () => {
   const modalScrollRef = useRef(null);
   const detailsOrderIdRef = useRef(null);
   const handWasVisibleRef = useRef(false);
+  const nativeCursorRef = useRef(null);
+  const gestureHitTestRef = useRef(createGestureHitTest());
+  const columnScrollRefsRef = useRef({});
+  const columnScrollYRef = useRef({});
+  const gestureCardRefsRef = useRef(new Map());
+  const columnRefsRef = useRef(new Map());
+  const lastGestureCursorRef = useRef({ x: 0, y: 0 });
+  const lastDragPreviewPosRef = useRef({ x: 0, y: 0 });
+  const gestureDropCommittingRef = useRef(false);
+  const pinchOpenSinceRef = useRef(0);
+  const gestureDragActiveRef = useRef(false);
+  const gestureBoundsRefreshTimerRef = useRef(null);
+  const gestureHeaderRef = useRef(null);
   const [gestureSettingsOpen, setGestureSettingsOpen] = useState(false);
   const [detailsOrderId, setDetailsOrderId] = useState(null);
 
   const gestureSettingsApi = useGestureSettings();
   const isGestureMode = interactionMode === INTERACTION_MODES.GESTURE;
-  const gesture = useWebGestureCursor(isGestureMode, gestureSettingsApi.settingsRef);
+  const gesture = useGestureCursor(
+    isGestureMode,
+    gestureSettingsApi.settingsRef,
+    nativeCursorRef,
+    gestureDragActiveRef
+  );
+  const GestureTracker = gesture.GestureTracker;
+
+  const findOrderIdAtPoint = useCallback(
+    (x, y) => {
+      if (isWeb) return findOrderIdAtPointWeb(x, y);
+      return gestureHitTestRef.current.findOrderIdAtPoint(x, y);
+    },
+    []
+  );
+
+  const findDetailsTriggerOrderId = useCallback(
+    (x, y) => {
+      if (isWeb) return findDetailsTriggerOrderIdWeb(x, y);
+      return gestureHitTestRef.current.findDetailsTriggerOrderId(x, y);
+    },
+    []
+  );
+
+  const isColumnScrollTarget = useCallback(
+    (x, y) => {
+      if (isWeb) return isColumnScrollTargetWeb(x, y);
+      return gestureHitTestRef.current.isColumnScrollTarget(x, y);
+    },
+    []
+  );
+
+  const resolveColumnScrollTarget = useCallback(
+    (x, y) => {
+      if (isWeb) return resolveColumnScrollTargetWeb(x, y);
+      return gestureHitTestRef.current.getColumnScrollKeyAtPoint(x, y);
+    },
+    []
+  );
+
+  const isModalCloseTarget = useCallback(
+    (x, y) => {
+      if (isWeb) return isModalCloseTargetWeb(x, y);
+      return gestureHitTestRef.current.isModalCloseTarget(x, y);
+    },
+    []
+  );
+
+  const isModalSheetTarget = useCallback(
+    (x, y) => {
+      if (isWeb) return isModalSheetTargetWeb(x, y);
+      return gestureHitTestRef.current.isModalSheetTarget(x, y);
+    },
+    []
+  );
+
+  const isModalCloseZone = useCallback(
+    (x, y, modalOpen) => {
+      if (!modalOpen) return false;
+      if (isModalCloseTarget(x, y)) return true;
+      const h = isWeb
+        ? typeof window !== "undefined"
+          ? window.innerHeight || 0
+          : 0
+        : Dimensions.get("window").height;
+      if (h > 0 && y <= h * 0.2) return true;
+      return false;
+    },
+    [isModalCloseTarget]
+  );
+
+  const scrollColumnContentBy = useCallback(
+    (deltaY, scrollTarget) => {
+      if (isWeb) {
+        scrollColumnContentByWeb(deltaY, scrollTarget);
+        return;
+      }
+      scrollColumnContentByNative(
+        deltaY,
+        scrollTarget,
+        columnScrollRefsRef,
+        columnScrollYRef
+      );
+    },
+    []
+  );
+
+  const registerGestureCardBounds = useCallback((orderId, bounds) => {
+    gestureHitTestRef.current.setOrderBounds(orderId, bounds);
+  }, []);
+
+  const registerGestureDetailsBounds = useCallback((orderId, bounds) => {
+    gestureHitTestRef.current.setDetailsTriggerBounds(orderId, bounds);
+  }, []);
+
+  const registerGestureCardRef = useCallback((orderId, ref) => {
+    const key = String(orderId);
+    if (ref) gestureCardRefsRef.current.set(key, ref);
+    else gestureCardRefsRef.current.delete(key);
+  }, []);
+
+  const refreshGestureCardBounds = useCallback(() => {
+    if (isWeb || !isGestureMode) return;
+    gestureCardRefsRef.current.forEach((ref, orderId) => {
+      measureViewInWindow(ref, (bounds) => {
+        gestureHitTestRef.current.setOrderBounds(orderId, bounds);
+      });
+    });
+    columnRefsRef.current.forEach((ref, columnKey) => {
+      measureViewInWindow(ref, (bounds) => {
+        gestureHitTestRef.current.setColumnBounds(columnKey, bounds);
+      });
+    });
+  }, [isGestureMode]);
+
+  const refreshGestureColumnBounds = useCallback(() => {
+    if (isWeb || !isGestureMode) return;
+    columnRefsRef.current.forEach((ref, columnKey) => {
+      measureViewInWindow(ref, (bounds) => {
+        gestureHitTestRef.current.setColumnBounds(columnKey, bounds);
+      });
+    });
+  }, [isGestureMode]);
+
+  const registerColumnRef = useCallback((columnKey, ref) => {
+    if (ref) columnRefsRef.current.set(columnKey, ref);
+    else columnRefsRef.current.delete(columnKey);
+  }, []);
+
+  const scheduleRefreshGestureCardBounds = useCallback(() => {
+    if (isWeb || !isGestureMode || gestureDraggedOrderIdRef.current != null) return;
+    if (gestureBoundsRefreshTimerRef.current) return;
+    gestureBoundsRefreshTimerRef.current = setTimeout(() => {
+      gestureBoundsRefreshTimerRef.current = null;
+      refreshGestureCardBounds();
+    }, 250);
+  }, [isGestureMode, refreshGestureCardBounds]);
+
+  const registerColumnScrollRef = useCallback((columnKey, ref) => {
+    columnScrollRefsRef.current[columnKey] = ref;
+  }, []);
+
+  const registerColumnScrollArea = useCallback((columnKey, bounds) => {
+    gestureHitTestRef.current.setColumnScrollBounds(columnKey, bounds);
+  }, []);
+
+  const handleColumnScrollOffset = useCallback((columnKey, offsetY) => {
+    columnScrollYRef.current[columnKey] = offsetY;
+    if (gestureDraggedOrderIdRef.current != null) return;
+    scheduleRefreshGestureCardBounds();
+  }, [scheduleRefreshGestureCardBounds]);
+
+  const handleModalGestureAreasLayout = useCallback(({ closeRail, sheet }) => {
+    if (closeRail) {
+      gestureHitTestRef.current.setModalCloseBounds(closeRail);
+    }
+    if (sheet) {
+      gestureHitTestRef.current.setModalSheetBounds(sheet);
+    }
+  }, []);
 
   gestureDraggedOrderIdRef.current = gestureDraggedOrderId;
+  gestureDragActiveRef.current = gestureDraggedOrderId != null;
   detailsOrderIdRef.current = detailsOrderId;
 
   const orders = useMemo(() => {
@@ -429,28 +661,39 @@ const OrderKanban = () => {
     return null;
   };
 
-  const patchOrdersCacheStatus = (orderId, resumoPedidoId, newStatus) => {
-    queryClient.setQueryData(["orders"], (prev) => {
-      if (!Array.isArray(prev)) return prev;
-      return prev.map((raw) => {
-        const matchesPedido = String(raw?.id) === String(orderId);
-        const matchesResumo =
-          resumoPedidoId != null &&
-          raw?.resumoPedidoId != null &&
-          String(raw.resumoPedidoId) === String(resumoPedidoId);
-        if (!matchesPedido && !matchesResumo) return raw;
-        return { ...raw, status: newStatus };
+  const patchOrdersCacheStatus = useCallback(
+    (orderId, resumoPedidoId, newStatus) => {
+      queryClient.setQueryData(ordersQueryKey, (prev) => {
+        if (!Array.isArray(prev)) return prev;
+        return prev.map((raw) => {
+          const matchesPedido = String(raw?.id) === String(orderId);
+          const matchesResumo =
+            resumoPedidoId != null &&
+            raw?.resumoPedidoId != null &&
+            String(raw.resumoPedidoId) === String(resumoPedidoId);
+          if (!matchesPedido && !matchesResumo) return raw;
+          return { ...raw, status: normalizeKanbanStatus(newStatus) };
+        });
       });
-    });
-  };
+    },
+    [queryClient, ordersQueryKey]
+  );
 
   const handleDrop = async (orderId, newStatus) => {
     const order = findOrderForKanban(orderId);
+    const previousStatus = order?.status ?? null;
+
+    const transitionError = getKanbanTransitionErrorMessage(previousStatus, newStatus);
+    if (transitionError) {
+      Alert.alert("Não foi possível mover", transitionError);
+      return;
+    }
+
     let resumoPedidoId = resolveResumoPedidoId(order);
 
     if (!resumoPedidoId) {
       const rawFromCache = queryClient
-        .getQueryData(["orders"])
+        .getQueryData(ordersQueryKey)
         ?.find((raw) => String(raw?.id) === String(orderId));
       resumoPedidoId = rawFromCache?.resumoPedidoId ?? null;
     }
@@ -468,8 +711,20 @@ const OrderKanban = () => {
     try {
       await updateOrderStatus(resumoPedidoId, newStatus);
     } catch (e) {
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
-      console.warn("Falha ao atualizar status no backend:", e);
+      if (previousStatus) {
+        patchOrdersCacheStatus(orderId, resumoPedidoId, previousStatus);
+      } else {
+        queryClient.invalidateQueries({ queryKey: ordersQueryKey });
+      }
+      const apiMessage =
+        e?.response?.data?.message ??
+        e?.response?.data?.error ??
+        e?.message ??
+        "Erro desconhecido";
+      Alert.alert(
+        "Não foi possível mover",
+        typeof apiMessage === "string" ? apiMessage : "O servidor recusou esta mudança de status."
+      );
     }
   };
 
@@ -535,6 +790,9 @@ const OrderKanban = () => {
     viewportWidthRef.current = event.nativeEvent.layout.width;
     invalidateBoardScrollDomNode();
     measureBoardBounds();
+    scrollRef.current?.measureInWindow?.((x, y, width, height) => {
+      scrollViewportOriginRef.current = { x, y, width, height };
+    });
   };
 
   const handleBoardViewportScroll = (event) => {
@@ -542,16 +800,18 @@ const OrderKanban = () => {
     if (typeof offsetX === "number") {
       scrollXRef.current = offsetX;
     }
+    if (gestureDraggedOrderIdRef.current != null) return;
+    scheduleRefreshGestureCardBounds();
   };
 
   const invalidateBoardScrollDomNode = () => {
     boardScrollDomNodeRef.current = null;
   };
 
+  const gestureEdgeStateRef = useRef({ active: false, edge: null, ts: 0 });
   const gestureEdgeEnteredAtRef = useRef({ edge: null, ts: 0 });
 
-  const gestureScrollEdge = (viewportX) => {
-    if (!isWeb) return;
+  const gestureScrollEdgeWeb = (viewportX) => {
     const cfg = gestureSettingsApi.settingsRef.current;
     const edgeThreshold = cfg.edgeThreshold;
     const edgeDelayMs = cfg.edgeDelayMs;
@@ -560,7 +820,6 @@ const OrderKanban = () => {
     const distRight = viewportW - viewportX;
     const nearLeft = distLeft < edgeThreshold;
     const nearRight = distRight < edgeThreshold;
-
     const currentEdge = nearLeft ? "left" : nearRight ? "right" : null;
 
     if (!currentEdge) {
@@ -582,12 +841,105 @@ const OrderKanban = () => {
 
     const dist = nearLeft ? distLeft : distRight;
     const proximity = 1 - dist / edgeThreshold;
-    const step =
-      cfg.scrollMinPx + (cfg.scrollMaxPx - cfg.scrollMinPx) * proximity;
-
+    const step = cfg.scrollMinPx + (cfg.scrollMaxPx - cfg.scrollMinPx) * proximity;
     const delta = nearRight ? step : -step;
     dom.scrollLeft = Math.max(0, dom.scrollLeft + delta);
     scrollXRef.current = dom.scrollLeft;
+  };
+
+  const getBoardMaxScrollX = () => {
+    const viewportW = viewportWidthRef.current > 0 ? viewportWidthRef.current : 400;
+    if (isWeb) {
+      const dom = getBoardScrollDomNode();
+      if (dom) {
+        return Math.max(0, dom.scrollWidth - dom.clientWidth);
+      }
+    }
+    return Math.max(0, KANBAN_CONTENT_MIN_WIDTH - viewportW);
+  };
+
+  const getViewportLocalX = (screenX) => {
+    const origin = scrollViewportOriginRef.current;
+    const viewportLeft =
+      origin.width > 0 ? origin.x : boardBoundsRef.current.x ?? 0;
+    return screenX - viewportLeft;
+  };
+
+  const gestureScrollEdge = (screenX, { dragging = false } = {}) => {
+    const cfg = gestureSettingsApi.settingsRef.current;
+    const enterThreshold = dragging ? Math.min(cfg.edgeThreshold, 96) : cfg.edgeThreshold;
+    const exitThreshold = enterThreshold + (dragging ? 48 : 36);
+    const edgeDelayMs = dragging ? 0 : cfg.edgeDelayMs;
+    const scrollMinPx = dragging ? 6 : cfg.scrollMinPx;
+    const scrollMaxPx = dragging ? 16 : cfg.scrollMaxPx;
+    const scrollIntervalMs = dragging ? 16 : Math.max(edgeDelayMs, 40);
+    const viewportW = viewportWidthRef.current > 0 ? viewportWidthRef.current : 400;
+    const viewportX = getViewportLocalX(screenX);
+    const distLeft = viewportX;
+    const distRight = viewportW - viewportX;
+    const edgeState = gestureEdgeStateRef.current;
+    let nearLeft = false;
+    let nearRight = false;
+
+    if (edgeState.active && edgeState.edge === "left") {
+      nearLeft = distLeft < exitThreshold;
+    } else if (edgeState.active && edgeState.edge === "right") {
+      nearRight = distRight < exitThreshold;
+    } else {
+      nearLeft = distLeft < enterThreshold;
+      nearRight = distRight < enterThreshold;
+    }
+
+    const currentEdge = nearLeft ? "left" : nearRight ? "right" : null;
+    const maxScrollX = getBoardMaxScrollX();
+
+    if (!currentEdge) {
+      gestureEdgeStateRef.current = { active: false, edge: null, ts: 0 };
+      if (!dragging) {
+        edgeHoverRef.current = { edge: null, sinceMs: 0 };
+      }
+      return;
+    }
+
+    if (currentEdge === "left" && scrollXRef.current <= 0) return;
+    if (currentEdge === "right" && scrollXRef.current >= maxScrollX - 1) return;
+
+    const now = Date.now();
+    if (dragging) {
+      if (edgeHoverRef.current.edge !== currentEdge) {
+        edgeHoverRef.current = { edge: currentEdge, sinceMs: now };
+      }
+    }
+
+    const prev = gestureEdgeStateRef.current;
+    if (!prev.active || prev.edge !== currentEdge) {
+      gestureEdgeStateRef.current = { active: true, edge: currentEdge, ts: now };
+      if (edgeDelayMs > 0) return;
+    }
+
+    if (now - prev.ts < scrollIntervalMs) return;
+
+    gestureEdgeStateRef.current = { active: true, edge: currentEdge, ts: now };
+
+    const dist = currentEdge === "left" ? distLeft : distRight;
+    const proximity = Math.max(0, Math.min(1, 1 - dist / enterThreshold));
+    const step = scrollMinPx + (scrollMaxPx - scrollMinPx) * proximity;
+    const delta = currentEdge === "right" ? step : -step;
+
+    if (isWeb) {
+      const dom = getBoardScrollDomNode();
+      if (!dom) return;
+      const nextScroll = Math.min(maxScrollX, Math.max(0, dom.scrollLeft + delta));
+      if (nextScroll === dom.scrollLeft) return;
+      dom.scrollLeft = nextScroll;
+      scrollXRef.current = nextScroll;
+      return;
+    }
+
+    const nextScroll = Math.min(maxScrollX, Math.max(0, scrollXRef.current + delta));
+    if (nextScroll === scrollXRef.current) return;
+    scrollRef.current?.scrollTo?.({ x: nextScroll, animated: false });
+    scrollXRef.current = nextScroll;
   };
 
   const scrollBoardAtViewportX = (viewportX) => {
@@ -633,15 +985,54 @@ const OrderKanban = () => {
     [isGestureMode]
   );
 
-  const applyDragPreviewTransform = (viewportX, viewportY) => {
+  const pendingPreviewPosRef = useRef(null);
+
+  const applyDragPreviewTransform = (viewportX, viewportY, useScreenCoords = false) => {
     const layer = dragPreviewLayerRef.current;
-    if (!layer) return;
+
+    if (isWeb) {
+      if (!layer?.style) return;
+      const bounds = boardBoundsRef.current;
+      const localX = viewportX - bounds.x;
+      const localY = viewportY - bounds.y;
+      layer.style.transform = `translate3d(${localX - 120}px, ${localY - 40}px, 0)`;
+      return;
+    }
+
+    const screenCoords =
+      useScreenCoords || (isGestureMode && gestureDraggedOrderIdRef.current != null);
+    const offsetX = viewportX - 120;
+    const offsetY = viewportY - 40;
+
+    if (!layer) {
+      pendingPreviewPosRef.current = { x: viewportX, y: viewportY, screenCoords };
+      return;
+    }
+    pendingPreviewPosRef.current = null;
+
+    if (screenCoords) {
+      layer.setNativeProps?.({
+        style: {
+          position: "absolute",
+          left: offsetX,
+          top: offsetY,
+          transform: [],
+        },
+      });
+      return;
+    }
+
     const bounds = boardBoundsRef.current;
     const localX = viewportX - bounds.x;
     const localY = viewportY - bounds.y;
-    if (isWeb && layer.style) {
-      layer.style.transform = `translate3d(${localX - 120}px, ${localY - 40}px, 0)`;
-    }
+    layer.setNativeProps?.({
+      style: {
+        transform: [
+          { translateX: localX - 120 },
+          { translateY: localY - 40 },
+        ],
+      },
+    });
   };
 
   const tryStartGestureDrag = (x, y, session) => {
@@ -655,18 +1046,42 @@ const OrderKanban = () => {
     ) {
       return false;
     }
-    const picked = findOrderIdAtPoint(x, y);
+    let picked = findOrderIdAtPoint(x, y);
+    if (picked == null && session?.startOrderId != null) {
+      picked = session.startOrderId;
+    }
     if (picked == null) return false;
     const pickedOrder = ordersRef.current.find((o) => o.id === picked);
     if (!pickedOrder) return false;
+    if (!canPickOrderForKanban(pickedOrder.status)) return false;
 
     session.dragStarted = true;
     pinchPickDoneRef.current = true;
     setGestureDraggedOrderId(pickedOrder.id);
     handleDragStateChange(true, pickedOrder.id);
     handleDragPreviewStart(pickedOrder);
-    applyDragPreviewTransform(x, y);
+    if (isWeb) {
+      applyDragPreviewTransform(x, y);
+      return true;
+    }
+    gestureDragActiveRef.current = true;
+    lastDragPreviewPosRef.current = { x, y };
+    applyDragPreviewTransform(x, y, true);
+    refreshGestureColumnBounds();
     return true;
+  };
+
+  const finishGestureDrop = (draggedId, targetStatus) => {
+    const targetIndex = COLUMNS.findIndex((column) => column.key === targetStatus);
+    const order = ordersRef.current.find((o) => o.id === draggedId);
+    const currentIndex = COLUMNS.findIndex((column) => column.key === order?.status);
+
+    if (targetIndex !== -1 && currentIndex !== -1 && targetIndex !== currentIndex) {
+      handleDrop(draggedId, targetStatus);
+    }
+    handleDragPreviewEnd();
+    setGestureDraggedOrderId(null);
+    handleDragStateChange(false, null);
   };
 
   const dragEnabled = !isGestureMode || !isWeb || !gesture.tracking;
@@ -714,6 +1129,31 @@ const OrderKanban = () => {
     }
   };
 
+  const resolveNativeDropColumn = useCallback(
+    (screenX, screenY) => {
+      const baseTarget =
+        gestureHitTestRef.current.findColumnKeyAtPoint(screenX, screenY) ?? null;
+      if (!baseTarget || !isGestureMode) return baseTarget;
+
+      const hover = edgeHoverRef.current;
+      const hoverMs = hover.edge ? Date.now() - hover.sinceMs : 0;
+      if (!hover.edge || hoverMs < EDGE_HOVER_MS) return baseTarget;
+
+      const draggedId = gestureDraggedOrderIdRef.current ?? draggingOrderId;
+      const order = ordersRef.current.find((o) => o.id === draggedId);
+      const currentIndex = COLUMNS.findIndex((column) => column.key === order?.status);
+      if (currentIndex === -1) return baseTarget;
+
+      const step = hover.edge === "right" ? 1 : -1;
+      const assistedIndex = Math.min(
+        COLUMNS.length - 1,
+        Math.max(0, currentIndex + step)
+      );
+      return COLUMNS[assistedIndex]?.key ?? baseTarget;
+    },
+    [isGestureMode, draggingOrderId]
+  );
+
   const resolveDropTarget = useCallback(
     (screenX, screenY) => {
       syncBoardScrollXRef();
@@ -721,18 +1161,95 @@ const OrderKanban = () => {
       if (isWeb) {
         const byPoint = findColumnKeyAtPoint(screenX, screenY);
         if (byPoint) return byPoint;
+        const bounds = boardBoundsRef.current;
+        const boardLeft = bounds?.x ?? 0;
+        const pointerContentX = scrollXRef.current + (screenX - boardLeft);
+        return resolveTargetStatusFromContentX(pointerContentX, {
+          allowEdgeAssist: isGestureMode,
+        });
       }
 
       const bounds = boardBoundsRef.current;
-      const boardLeft = bounds?.x ?? 0;
-      const pointerContentX = scrollXRef.current + (screenX - boardLeft);
+      const viewportOrigin = scrollViewportOriginRef.current;
+      const viewportLeft =
+        viewportOrigin.width > 0 ? viewportOrigin.x : bounds?.x ?? 0;
+      const pointerContentX = scrollXRef.current + (screenX - viewportLeft);
+
+      if (isGestureMode && gestureDraggedOrderIdRef.current != null) {
+        const nativeTarget = resolveNativeDropColumn(screenX, screenY);
+        if (nativeTarget) return nativeTarget;
+        return resolveTargetStatusFromContentX(pointerContentX, {
+          allowEdgeAssist: false,
+        });
+      }
+
+      const nativeTarget = resolveNativeDropColumn(screenX, screenY);
+      if (nativeTarget) return nativeTarget;
 
       return resolveTargetStatusFromContentX(pointerContentX, {
         allowEdgeAssist: isGestureMode,
       });
     },
-    [isGestureMode, orders, draggingOrderId]
+    [isGestureMode, resolveNativeDropColumn]
   );
+
+  const resolveDropTargetForRelease = useCallback(
+    (screenX, screenY) => {
+      syncBoardScrollXRef();
+
+      if (isWeb) {
+        const byPoint = findColumnKeyAtPoint(screenX, screenY);
+        if (byPoint) return byPoint;
+        const bounds = boardBoundsRef.current;
+        const boardLeft = bounds?.x ?? 0;
+        const pointerContentX = scrollXRef.current + (screenX - boardLeft);
+        return resolveTargetStatusFromContentX(pointerContentX, {
+          allowEdgeAssist: false,
+        });
+      }
+
+      return resolveDropTarget(screenX, screenY);
+    },
+    [resolveDropTarget]
+  );
+
+  const hideDragPreviewLayer = () => {
+    const layer = dragPreviewLayerRef.current;
+    if (!layer) return;
+    if (isWeb && layer.style) {
+      layer.style.opacity = "0";
+      layer.style.visibility = "hidden";
+      return;
+    }
+    layer.setNativeProps?.({ style: { opacity: 0 } });
+  };
+
+  const commitGestureDrop = useCallback(() => {
+    const draggedId = gestureDraggedOrderIdRef.current;
+    if (draggedId == null || gestureDropCommittingRef.current) return false;
+
+    const dropPos = lastDragPreviewPosRef.current;
+    if (
+      !Number.isFinite(dropPos.x) ||
+      !Number.isFinite(dropPos.y) ||
+      (dropPos.x < 8 && dropPos.y < 8)
+    ) {
+      return false;
+    }
+
+    gestureDropCommittingRef.current = true;
+    pinchOpenSinceRef.current = 0;
+    pinchPickDoneRef.current = false;
+    gestureDragActiveRef.current = false;
+    hideDragPreviewLayer();
+    const targetStatus = resolveDropTarget(dropPos.x, dropPos.y);
+    gestureDraggedOrderIdRef.current = null;
+    finishGestureDrop(draggedId, targetStatus);
+    pinchSessionRef.current = null;
+    pinchPrevRef.current = false;
+    gestureDropCommittingRef.current = false;
+    return true;
+  }, [resolveDropTarget]);
 
   const handleDragPreviewStart = useCallback((order) => {
     measureBoardBounds();
@@ -762,9 +1279,18 @@ const OrderKanban = () => {
 
   const handleDragPreviewEnd = useCallback(() => {
     edgeHoverRef.current = { edge: null, sinceMs: 0 };
-    if (isWeb && dragPreviewLayerRef.current?.style) {
-      dragPreviewLayerRef.current.style.transform = "";
+    if (isWeb) {
+      gestureEdgeEnteredAtRef.current = { edge: null, ts: 0 };
+      if (dragPreviewLayerRef.current?.style) {
+        dragPreviewLayerRef.current.style.transform = "";
+      }
+      setDragPreview(null);
+      return;
     }
+    gestureEdgeStateRef.current = { active: false, edge: null, ts: 0 };
+    pinchOpenSinceRef.current = 0;
+    gestureDragActiveRef.current = false;
+    hideDragPreviewLayer();
     setDragPreview(null);
   }, []);
 
@@ -779,19 +1305,66 @@ const OrderKanban = () => {
 
   const scrollModalContentBy = useCallback((deltaY) => {
     if (!deltaY) return;
+    const step = deltaY * MODAL_SCROLL_GAIN;
     if (modalScrollRef.current?.scrollBy) {
-      modalScrollRef.current.scrollBy(deltaY);
+      modalScrollRef.current.scrollBy(step);
       return;
     }
     if (!isWeb || typeof document === "undefined") return;
     const el = document.querySelector('[data-modal-scroll="true"]');
     if (!el || typeof el.scrollTop !== "number") return;
     const maxScroll = Math.max(0, el.scrollHeight - el.clientHeight);
-    el.scrollTop = Math.min(maxScroll, Math.max(0, el.scrollTop + deltaY));
+    el.scrollTop = Math.min(maxScroll, Math.max(0, el.scrollTop + step));
   }, []);
 
+  const tryActivateModalGestureScroll = useCallback((session, x, y) => {
+    if (!session || session.modalScrollStarted || session.dragStarted) return;
+    if (detailsOrderIdRef.current == null) return;
+    if (isModalCloseRailStart(session.startY) || isModalCloseRailStart(y)) return;
+
+    const onModal =
+      isModalSheetTarget(session.startX, session.startY) ||
+      isModalSheetTarget(x, y) ||
+      !isModalCloseRailStart(session.startY);
+    if (!onModal) return;
+
+    const dy = y - session.startY;
+    const dx = Math.abs(x - session.startX);
+    if (
+      Math.abs(dy) > MODAL_SCROLL_START_Y &&
+      Math.abs(dy) >= dx * MODAL_SCROLL_VERTICAL_RATIO
+    ) {
+      session.modalScrollStarted = true;
+      session.lastScrollFingerY = y;
+      dwellRef.current = { target: null, sinceMs: 0, anchorX: 0, anchorY: 0, armedAt: 0 };
+    }
+  }, [isModalSheetTarget, isModalCloseRailStart]);
+
+  const armModalGestureScrollOnPinch = useCallback((session, x, y) => {
+    if (!session || detailsOrderIdRef.current == null) return;
+    if (session.modalScrollStarted || session.dragStarted) return;
+    if (isModalCloseRailStart(y)) return;
+    const onModal = isModalSheetTarget(x, y) || !isModalCloseRailStart(y);
+    if (!onModal) return;
+    session.modalScrollStarted = true;
+    session.lastScrollFingerY = y;
+    dwellRef.current = { target: null, sinceMs: 0, anchorX: 0, anchorY: 0, armedAt: 0 };
+  }, [isModalSheetTarget, isModalCloseRailStart]);
+
+  const applyModalGestureScroll = useCallback(
+    (session, y) => {
+      if (!session?.modalScrollStarted) return;
+      const delta = y - (session.lastScrollFingerY ?? y);
+      session.lastScrollFingerY = y;
+      if (Math.abs(delta) > 0.1) {
+        scrollModalContentBy(delta);
+      }
+    },
+    [scrollModalContentBy]
+  );
+
   const measureBoardBounds = () => {
-    if (!isWeb || !boardRef.current?.measureInWindow) return;
+    if (!boardRef.current?.measureInWindow) return;
     boardRef.current.measureInWindow((x, y, width, height) => {
       boardBoundsRef.current = { x, y, width, height };
     });
@@ -799,6 +1372,148 @@ const OrderKanban = () => {
 
   const processGesturePinch = (x, y) => {
     const pinching = gesture.pinchingRef.current;
+
+    if (isWeb) {
+      const wasPinching = pinchPrevRef.current;
+      let session = pinchSessionRef.current;
+
+      if (pinching && !wasPinching) {
+        pinchPickDoneRef.current = false;
+        const cfg = gestureSettingsApi.settingsRef.current;
+        dwellCooldownUntilRef.current = Date.now() + cfg.dwellCooldownMs;
+        dwellRef.current = { target: null, sinceMs: 0, anchorX: 0, anchorY: 0, armedAt: 0 };
+        const startOrderId = findOrderIdAtPoint(x, y);
+        pinchSessionRef.current = {
+          startX: x,
+          startY: y,
+          startMs: Date.now(),
+          startOrderId,
+          dragStarted: false,
+          modalScrollStarted: false,
+          columnScrollStarted: false,
+          columnScrollEl: null,
+          lastScrollFingerY: 0,
+        };
+        session = pinchSessionRef.current;
+        armModalGestureScrollOnPinch(session, x, y);
+        if (detailsOrderIdRef.current == null && startOrderId != null) {
+          tryStartGestureDrag(x, y, session);
+        }
+      }
+
+      if (pinching && session) {
+        tryActivateModalGestureScroll(session, x, y);
+      }
+
+      if (
+        pinching &&
+        session &&
+        !session.dragStarted &&
+        !session.modalScrollStarted &&
+        !session.columnScrollStarted &&
+        detailsOrderIdRef.current == null &&
+        session.startOrderId == null &&
+        isColumnScrollTarget(session.startX, session.startY)
+      ) {
+        const dy = y - session.startY;
+        const dx = Math.abs(x - session.startX);
+        if (
+          Math.abs(dy) > COLUMN_SCROLL_START_Y &&
+          Math.abs(dy) >= dx * COLUMN_SCROLL_VERTICAL_RATIO
+        ) {
+          session.columnScrollStarted = true;
+          session.columnScrollEl = resolveColumnScrollTarget(session.startX, session.startY);
+          session.lastScrollFingerY = y;
+          dwellRef.current = { target: null, sinceMs: 0, anchorX: 0, anchorY: 0, armedAt: 0 };
+        }
+      }
+
+      if (pinching && session?.columnScrollStarted) {
+        const delta = y - (session.lastScrollFingerY ?? y);
+        session.lastScrollFingerY = y;
+        if (Math.abs(delta) > 0.5) {
+          scrollColumnContentBy(delta, session.columnScrollEl);
+        }
+      }
+
+      if (
+        pinching &&
+        session &&
+        !session.dragStarted &&
+        !session.modalScrollStarted &&
+        !session.columnScrollStarted &&
+        detailsOrderIdRef.current == null
+      ) {
+        const dx = Math.abs(x - session.startX);
+        const dy = Math.abs(y - session.startY);
+        const move = Math.hypot(dx, dy);
+        const dragMinMove = gestureSettingsApi.settingsRef.current.pinchDragMinMove;
+        const horizontalIntent = dx >= dy * 0.65;
+        if (
+          move >= dragMinMove &&
+          horizontalIntent &&
+          gestureDraggedOrderIdRef.current == null
+        ) {
+          tryStartGestureDrag(x, y, session) ||
+            tryStartGestureDrag(session.startX, session.startY, session);
+        }
+      }
+
+      if (!pinching && wasPinching) {
+        if (session?.dragStarted && gestureDraggedOrderIdRef.current != null) {
+          const draggedId = gestureDraggedOrderIdRef.current;
+          const targetStatus = normalizeKanbanStatus(resolveDropTargetForRelease(x, y));
+          const order = ordersRef.current.find((o) => o.id === draggedId);
+          const currentStatus = normalizeKanbanStatus(order?.status);
+          const targetIndex = COLUMNS.findIndex((column) => column.key === targetStatus);
+          const currentIndex = COLUMNS.findIndex((column) => column.key === currentStatus);
+
+          if (targetIndex !== -1 && currentIndex !== -1 && targetIndex !== currentIndex) {
+            const transitionError = getKanbanTransitionErrorMessage(currentStatus, targetStatus);
+            if (transitionError) {
+              Alert.alert("Não foi possível mover", transitionError);
+            } else {
+              handleDrop(draggedId, targetStatus);
+            }
+          }
+          setGestureDraggedOrderId(null);
+          handleDragStateChange(false, null);
+          handleDragPreviewEnd();
+        } else if (session) {
+          const move = Math.hypot(x - session.startX, y - session.startY);
+          const elapsed = Date.now() - session.startMs;
+          const isShortClick =
+            move <= GESTURE_CLICK_MAX_MOVE && elapsed <= GESTURE_CLICK_MAX_MS;
+
+          if (
+            !session.dragStarted &&
+            !session.modalScrollStarted &&
+            !session.columnScrollStarted &&
+            detailsOrderIdRef.current == null
+          ) {
+            dwellCooldownUntilRef.current =
+              Date.now() + gestureSettingsApi.settingsRef.current.dwellCooldownMs;
+          } else if (detailsOrderIdRef.current != null && isShortClick) {
+            const startX = session.startX;
+            const startY = session.startY;
+            if (isModalCloseZone(x, y, true) || isModalCloseZone(startX, startY, true)) {
+              closeDetailsModal();
+            }
+          }
+        }
+
+        pinchPickDoneRef.current = false;
+        pinchSessionRef.current = null;
+      }
+
+      pinchPrevRef.current = pinching;
+      return;
+    }
+
+    if (gestureDraggedOrderIdRef.current != null) {
+      pinchPrevRef.current = pinching;
+      return;
+    }
     const wasPinching = pinchPrevRef.current;
     let session = pinchSessionRef.current;
 
@@ -814,13 +1529,36 @@ const OrderKanban = () => {
         startMs: Date.now(),
         startOrderId,
         dragStarted: false,
+        pickAttempted: false,
         modalScrollStarted: false,
         columnScrollStarted: false,
-        columnScrollEl: null,
+        columnScrollTarget: null,
         lastScrollFingerY: 0,
       };
       session = pinchSessionRef.current;
+      armModalGestureScrollOnPinch(session, x, y);
       if (detailsOrderIdRef.current == null && startOrderId != null) {
+        tryStartGestureDrag(x, y, session);
+      }
+    }
+
+    if (pinching && session) {
+      tryActivateModalGestureScroll(session, x, y);
+    }
+
+    if (
+      pinching &&
+      session &&
+      !session.dragStarted &&
+      !session.pickAttempted &&
+      !session.modalScrollStarted &&
+      !session.columnScrollStarted &&
+      detailsOrderIdRef.current == null
+    ) {
+      const orderUnderCursor = findOrderIdAtPoint(x, y);
+      if (orderUnderCursor != null) {
+        session.startOrderId = orderUnderCursor;
+        session.pickAttempted = true;
         tryStartGestureDrag(x, y, session);
       }
     }
@@ -829,33 +1567,17 @@ const OrderKanban = () => {
       pinching &&
       session &&
       !session.dragStarted &&
-      detailsOrderIdRef.current != null &&
-      !session.modalScrollStarted
+      !session.pickAttempted &&
+      !session.modalScrollStarted &&
+      !session.columnScrollStarted &&
+      detailsOrderIdRef.current == null &&
+      session.startOrderId != null &&
+      gestureDraggedOrderIdRef.current == null
     ) {
-      const dy = y - session.startY;
-      const dx = Math.abs(x - session.startX);
-      const startedOnCloseRail = isModalCloseRailStart(session.startY);
-      const onModal =
-        isModalSheetTarget(session.startX, session.startY) ||
-        isModalSheetTarget(x, y) ||
-        !startedOnCloseRail;
-      if (
-        onModal &&
-        !startedOnCloseRail &&
-        Math.abs(dy) > MODAL_SCROLL_START_Y &&
-        Math.abs(dy) >= dx * 0.45
-      ) {
-        session.modalScrollStarted = true;
-        session.lastScrollFingerY = y;
-        dwellRef.current = { target: null, sinceMs: 0, anchorX: 0, anchorY: 0, armedAt: 0 };
-      }
-    }
-
-    if (pinching && session?.modalScrollStarted) {
-      const delta = y - (session.lastScrollFingerY ?? y);
-      session.lastScrollFingerY = y;
-      if (Math.abs(delta) > 0.5) {
-        scrollModalContentBy(delta);
+      const pickHoldMs = gestureSettingsApi.settingsRef.current.pinchPickHoldMs ?? 0;
+      if (pickHoldMs > 0 && Date.now() - session.startMs >= pickHoldMs) {
+        session.pickAttempted = true;
+        tryStartGestureDrag(session.startX, session.startY, session);
       }
     }
 
@@ -876,7 +1598,7 @@ const OrderKanban = () => {
         Math.abs(dy) >= dx * COLUMN_SCROLL_VERTICAL_RATIO
       ) {
         session.columnScrollStarted = true;
-        session.columnScrollEl = resolveColumnScrollElement(
+        session.columnScrollTarget = resolveColumnScrollTarget(
           session.startX,
           session.startY
         );
@@ -889,7 +1611,7 @@ const OrderKanban = () => {
       const delta = y - (session.lastScrollFingerY ?? y);
       session.lastScrollFingerY = y;
       if (Math.abs(delta) > 0.5) {
-        scrollColumnContentBy(delta, session.columnScrollEl);
+        scrollColumnContentBy(delta, session.columnScrollTarget);
       }
     }
 
@@ -904,32 +1626,28 @@ const OrderKanban = () => {
       const dx = Math.abs(x - session.startX);
       const dy = Math.abs(y - session.startY);
       const move = Math.hypot(dx, dy);
-      const dragMinMove = gestureSettingsApi.settingsRef.current.pinchDragMinMove;
+      const dragMinMove = isWeb
+        ? gestureSettingsApi.settingsRef.current.pinchDragMinMove
+        : Math.max(
+            14,
+            gestureSettingsApi.settingsRef.current.pinchDragMinMove ?? 14
+          );
       const horizontalIntent = dx >= dy * 0.65;
       if (
         move >= dragMinMove &&
         horizontalIntent &&
         gestureDraggedOrderIdRef.current == null
       ) {
-        tryStartGestureDrag(x, y, session) ||
-          tryStartGestureDrag(session.startX, session.startY, session);
+        tryStartGestureDrag(session.startX, session.startY, session);
       }
     }
 
     if (!pinching && wasPinching) {
-      if (session?.dragStarted && gestureDraggedOrderIdRef.current != null) {
-        const draggedId = gestureDraggedOrderIdRef.current;
-        const targetStatus = resolveDropTarget(x, y);
-        const targetIndex = COLUMNS.findIndex((column) => column.key === targetStatus);
-        const order = ordersRef.current.find((o) => o.id === draggedId);
-        const currentIndex = COLUMNS.findIndex((column) => column.key === order?.status);
-
-        if (targetIndex !== -1 && currentIndex !== -1 && targetIndex !== currentIndex) {
-          handleDrop(draggedId, targetStatus);
-        }
-        setGestureDraggedOrderId(null);
-        handleDragStateChange(false, null);
-        handleDragPreviewEnd();
+      if (
+        session?.dragStarted &&
+        gestureDraggedOrderIdRef.current != null
+      ) {
+        // Drop tratado no loop rápido (commitGestureDrop) ao soltar a pinça.
       } else if (session) {
         const move = Math.hypot(x - session.startX, y - session.startY);
         const elapsed = Date.now() - session.startMs;
@@ -1049,49 +1767,150 @@ const OrderKanban = () => {
   };
 
   useEffect(() => {
+    if (!dragPreview || gestureDraggedOrderId == null || !isGestureMode || isWeb) return;
+    const pos = pendingPreviewPosRef.current ?? lastDragPreviewPosRef.current;
+    requestAnimationFrame(() => {
+      applyDragPreviewTransform(pos.x, pos.y, true);
+    });
+  }, [dragPreview, gestureDraggedOrderId, isGestureMode]);
+
+  useEffect(() => {
     if (!isGestureMode || !gesture.tracking) return undefined;
 
-    let rafId = 0;
-    const tick = () => {
-      const handVisible = gesture.handVisibleRef?.current;
+    if (isWeb) {
+      let rafId = 0;
+      const tick = () => {
+        const handVisible = gesture.handVisibleRef?.current;
 
-      if (!handVisible) {
-        const dotHidden = cursorDotRef.current;
-        if (dotHidden?.style) dotHidden.style.opacity = "0";
-        handWasVisibleRef.current = false;
+        if (!handVisible) {
+          const dotHidden = cursorDotRef.current;
+          if (dotHidden?.style) dotHidden.style.opacity = "0";
+          handWasVisibleRef.current = false;
+          rafId = requestAnimationFrame(tick);
+          return;
+        }
+
+        handWasVisibleRef.current = true;
+        const { x, y } = gesture.cursorRef.current;
+
+        processGesturePinch(x, y);
+        const session = pinchSessionRef.current;
+        if (gesture.pinchingRef.current && session?.modalScrollStarted) {
+          applyModalGestureScroll(session, y);
+        }
+        const dwellProgress = processGestureDwell(x, y);
+        if (gestureDraggedOrderIdRef.current != null) {
+          applyDragPreviewTransform(x, y);
+        }
+        if (detailsOrderIdRef.current == null) {
+          gestureScrollEdgeWeb(x);
+        }
+
+        const dot = cursorDotRef.current;
+        if (dot?.style) {
+          const pinching = gesture.pinchingRef.current;
+          const cfg = gestureSettingsApi.settingsRef.current;
+          const overDetailsBtn =
+            detailsOrderIdRef.current == null &&
+            cfg.openDetailsWithGesture &&
+            findDetailsTriggerOrderId(x, y);
+          const overCard =
+            detailsOrderIdRef.current == null && findOrderIdAtPoint(x, y);
+          const overClose =
+            detailsOrderIdRef.current != null && isModalCloseZone(x, y, true);
+          const dwelling = !pinching && dwellProgress > 0;
+          const size = pinching ? 24 : dwelling ? 26 : overDetailsBtn || overClose ? 22 : 20;
+          const half = size / 2;
+
+          dot.style.position = "fixed";
+          dot.style.left = `${x - half}px`;
+          dot.style.top = `${y - half}px`;
+          dot.style.transform = "none";
+          dot.style.zIndex = "2147483646";
+          dot.style.width = `${size}px`;
+          dot.style.height = `${size}px`;
+          dot.style.borderWidth = dwelling || overDetailsBtn ? "3px" : "2px";
+          dot.style.borderColor =
+            pinching ? "#fff" : overClose ? "#FFEEE7" : overDetailsBtn ? "#25A066" : "#fff";
+          dot.style.backgroundColor = pinching
+            ? "rgba(196, 80, 40, 0.9)"
+            : overClose
+              ? "rgba(196, 80, 40, 0.9)"
+              : overDetailsBtn
+                ? "rgba(37, 160, 102, 0.85)"
+                : overCard
+                  ? "rgba(164, 112, 50, 0.85)"
+                  : "rgba(164, 112, 50, 0.65)";
+          dot.style.boxShadow = dwelling
+            ? detailsOrderIdRef.current == null
+              ? `0 0 0 ${4 + dwellProgress * 10}px rgba(37, 160, 102, ${0.25 + dwellProgress * 0.45})`
+              : `0 0 0 ${4 + dwellProgress * 10}px rgba(196, 80, 40, ${0.25 + dwellProgress * 0.45})`
+            : "none";
+          dot.style.opacity = "1";
+          dot.style.pointerEvents = "none";
+        }
+
         rafId = requestAnimationFrame(tick);
-        return;
-      }
+      };
 
-      handWasVisibleRef.current = true;
+      rafId = requestAnimationFrame(tick);
+      return () => cancelAnimationFrame(rafId);
+    }
 
-      const { x, y } = gesture.cursorRef.current;
+    let rafId = 0;
+    let lastLogicMs = 0;
+    let lastCursorPaintMs = 0;
+    let lastEdgeScrollMs = 0;
+    let lastHitX = -9999;
+    let lastHitY = -9999;
+    let cachedOverDetailsBtn = null;
+    let cachedOverCard = null;
+    let cachedOverClose = false;
+    let cachedDwellProgress = 0;
+    let dragHandLostFrames = 0;
+    let pinchReleasedFrames = 0;
 
-      processGesturePinch(x, y);
-
-      const dwellProgress = processGestureDwell(x, y);
-
-      applyDragPreviewTransform(x, y);
-      if (detailsOrderIdRef.current == null) {
-        gestureScrollEdge(x);
-      }
-
-      const dot = cursorDotRef.current;
-      if (dot && isWeb && dot.style) {
-        const pinching = gesture.pinchingRef.current;
-        const cfg = gestureSettingsApi.settingsRef.current;
-        const overDetailsBtn =
+    const paintNativeCursor = (x, y, pinching, dwellProgress, cfg) => {
+      const movedHit = Math.hypot(x - lastHitX, y - lastHitY);
+      if (movedHit > 8) {
+        lastHitX = x;
+        lastHitY = y;
+        cachedOverDetailsBtn =
           detailsOrderIdRef.current == null &&
           cfg.openDetailsWithGesture &&
           findDetailsTriggerOrderId(x, y);
-        const overCard =
+        cachedOverCard =
           detailsOrderIdRef.current == null && findOrderIdAtPoint(x, y);
-        const overClose =
+        cachedOverClose =
           detailsOrderIdRef.current != null && isModalCloseZone(x, y, true);
-        const dwelling = !pinching && dwellProgress > 0;
-        const size = pinching ? 24 : dwelling ? 26 : overDetailsBtn || overClose ? 22 : 20;
-        const half = size / 2;
+      }
 
+      const overDetailsBtn = cachedOverDetailsBtn;
+      const overCard = cachedOverCard;
+      const overClose = cachedOverClose;
+      const dwelling = !pinching && dwellProgress > 0;
+      const size = pinching ? 24 : dwelling ? 26 : overDetailsBtn || overClose ? 22 : 20;
+      const half = size / 2;
+      const borderColor = pinching
+        ? "#fff"
+        : overClose
+          ? "#FFEEE7"
+          : overDetailsBtn
+            ? "#25A066"
+            : "#fff";
+      const backgroundColor = pinching
+        ? "rgba(196, 80, 40, 0.9)"
+        : overClose
+          ? "rgba(196, 80, 40, 0.9)"
+          : overDetailsBtn
+            ? "rgba(37, 160, 102, 0.85)"
+            : overCard
+              ? "rgba(164, 112, 50, 0.85)"
+              : "rgba(164, 112, 50, 0.65)";
+
+      const dot = cursorDotRef.current;
+      if (dot && isWeb && dot.style) {
+        dot.dataset.gestureOverlay = "true";
         dot.style.position = "fixed";
         dot.style.left = `${x - half}px`;
         dot.style.top = `${y - half}px`;
@@ -1100,17 +1919,8 @@ const OrderKanban = () => {
         dot.style.width = `${size}px`;
         dot.style.height = `${size}px`;
         dot.style.borderWidth = dwelling || overDetailsBtn ? "3px" : "2px";
-        dot.style.borderColor =
-          pinching ? "#fff" : overClose ? "#FFEEE7" : overDetailsBtn ? "#25A066" : "#fff";
-        dot.style.backgroundColor = pinching
-          ? "rgba(196, 80, 40, 0.9)"
-          : overClose
-            ? "rgba(196, 80, 40, 0.9)"
-            : overDetailsBtn
-              ? "rgba(37, 160, 102, 0.85)"
-              : overCard
-                ? "rgba(164, 112, 50, 0.85)"
-                : "rgba(164, 112, 50, 0.65)";
+        dot.style.borderColor = borderColor;
+        dot.style.backgroundColor = backgroundColor;
         dot.style.boxShadow = dwelling
           ? detailsOrderIdRef.current == null
             ? `0 0 0 ${4 + dwellProgress * 10}px rgba(37, 160, 102, ${0.25 + dwellProgress * 0.45})`
@@ -1120,7 +1930,143 @@ const OrderKanban = () => {
         dot.style.pointerEvents = "none";
       }
 
+      if (!isWeb && nativeCursorRef.current?.setNativeProps) {
+        nativeCursorRef.current.setNativeProps({
+          style: {
+            position: "absolute",
+            left: x - half,
+            top: y - half,
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            borderWidth: dwelling || overDetailsBtn ? 3 : 2,
+            borderColor,
+            backgroundColor,
+            opacity: 1,
+          },
+        });
+      }
+    };
+
+    const tick = (now) => {
+      const ts = now ?? Date.now();
       rafId = requestAnimationFrame(tick);
+
+      const handVisible = gesture.handVisibleRef?.current;
+      const dragging = gestureDraggedOrderIdRef.current != null;
+      const pinching = gesture.pinchingRef.current;
+      const frozenPos = lastDragPreviewPosRef.current;
+      let x;
+      let y;
+      if (dragging && (!handVisible || !pinching)) {
+        x = frozenPos.x;
+        y = frozenPos.y;
+      } else {
+        const cursor = gesture.cursorRef.current ?? lastGestureCursorRef.current;
+        x = cursor?.x ?? 0;
+        y = cursor?.y ?? 0;
+        if (handVisible && (x > 0 || y > 0)) {
+          lastGestureCursorRef.current = { x, y };
+        }
+      }
+
+      if (dragging) {
+        dragHandLostFrames = handVisible ? 0 : dragHandLostFrames + 1;
+        const shouldDropOnPinchRelease =
+          !pinching &&
+          pinchReleasedFrames >= 2 &&
+          (pinchPrevRef.current || pinchPickDoneRef.current);
+        const shouldDropOnHandLost = !handVisible && dragHandLostFrames >= 4;
+
+        if (pinching) {
+          pinchReleasedFrames = 0;
+          if (x > 8 || y > 8) {
+            lastDragPreviewPosRef.current = { x, y };
+            applyDragPreviewTransform(x, y, true);
+          } else {
+            applyDragPreviewTransform(frozenPos.x, frozenPos.y, true);
+          }
+          if (detailsOrderIdRef.current == null && ts - lastEdgeScrollMs >= 16) {
+            lastEdgeScrollMs = ts;
+            gestureScrollEdge(x, y, { dragging: true });
+          }
+          pinchPrevRef.current = true;
+        } else {
+          pinchReleasedFrames += 1;
+          applyDragPreviewTransform(frozenPos.x, frozenPos.y, true);
+          if (shouldDropOnPinchRelease || shouldDropOnHandLost) {
+            commitGestureDrop();
+          }
+        }
+      } else {
+        dragHandLostFrames = 0;
+        pinchReleasedFrames = 0;
+      }
+
+      if (!handVisible) {
+        if (dragging) {
+          // Drop já tratado acima; mantém preview congelado se ainda arrastando.
+          if (gestureDraggedOrderIdRef.current != null) {
+            const frozen = lastDragPreviewPosRef.current;
+            applyDragPreviewTransform(frozen.x, frozen.y, true);
+          }
+        }
+        if (ts - lastCursorPaintMs >= 100) {
+          lastCursorPaintMs = ts;
+          const dotHidden = cursorDotRef.current;
+          if (dotHidden?.style) dotHidden.style.opacity = "0";
+          nativeCursorRef.current?.setNativeProps?.({ style: { opacity: 0 } });
+        }
+        handWasVisibleRef.current = false;
+        if (!dragging) return;
+      }
+
+      handWasVisibleRef.current = true;
+
+      const modalSession = pinchSessionRef.current;
+      if (pinching && modalSession?.modalScrollStarted) {
+        applyModalGestureScroll(modalSession, y);
+      }
+
+      if (!dragging) {
+        const vpX = getViewportLocalX(x);
+        const edgeThreshold = gestureSettingsApi.settingsRef.current.edgeThreshold;
+        const viewportW = viewportWidthRef.current > 0 ? viewportWidthRef.current : 400;
+        const nearEdge = vpX < edgeThreshold || vpX > viewportW - edgeThreshold;
+        if (
+          detailsOrderIdRef.current == null &&
+          nearEdge &&
+          ts - lastEdgeScrollMs >= 32
+        ) {
+          lastEdgeScrollMs = ts;
+          gestureScrollEdge(x, { dragging: false });
+        }
+      }
+
+      if (ts - lastCursorPaintMs >= 16) {
+        lastCursorPaintMs = ts;
+        paintNativeCursor(
+          x,
+          y,
+          pinching,
+          cachedDwellProgress,
+          gestureSettingsApi.settingsRef.current
+        );
+      }
+
+      if (!pinching && !dragging) {
+        if (ts - lastLogicMs < 50) return;
+      } else {
+        const pinchEdge = pinching !== pinchPrevRef.current;
+        if (!pinchEdge && ts - lastLogicMs < 16) return;
+      }
+      lastLogicMs = ts;
+
+      processGesturePinch(x, y);
+
+      if (!dragging) {
+        cachedDwellProgress = processGestureDwell(x, y);
+      }
     };
 
     rafId = requestAnimationFrame(tick);
@@ -1129,6 +2075,10 @@ const OrderKanban = () => {
 
   useEffect(() => {
     if (!isGestureMode) {
+      if (gestureBoundsRefreshTimerRef.current) {
+        clearTimeout(gestureBoundsRefreshTimerRef.current);
+        gestureBoundsRefreshTimerRef.current = null;
+      }
       pinchPrevRef.current = false;
       pinchPickDoneRef.current = false;
       pinchSessionRef.current = null;
@@ -1136,8 +2086,12 @@ const OrderKanban = () => {
       setGestureDraggedOrderId(null);
       setDetailsOrderId(null);
       modalScrollRef.current = null;
+      return;
     }
-  }, [isGestureMode]);
+    if (!isWeb && gesture.tracking) {
+      refreshGestureCardBounds();
+    }
+  }, [isGestureMode, isWeb, gesture.tracking, refreshGestureCardBounds]);
 
   if ((isLoading || isFetching) && orders.length === 0) {
     return (
@@ -1208,12 +2162,20 @@ const OrderKanban = () => {
   }
 
   return (
-    <View
-      ref={boardRef}
-      onLayout={measureBoardBounds}
-      style={{ flex: 1, width: "100%", minHeight: 0, backgroundColor: "#FFEEE7" }}
-    >
+    <>
+      {!isWeb && GestureTracker ? (
+        <GestureErrorBoundary onError={() => setInteractionMode(INTERACTION_MODES.TOUCH)}>
+          <GestureTracker />
+        </GestureErrorBoundary>
+      ) : null}
       <View
+        ref={boardRef}
+        onLayout={measureBoardBounds}
+        style={{ flex: 1, width: "100%", minHeight: 0, backgroundColor: "#FFEEE7" }}
+        collapsable={false}
+      >
+      <View
+        ref={gestureHeaderRef}
         style={{
           flexDirection: "row",
           justifyContent: "space-between",
@@ -1222,25 +2184,36 @@ const OrderKanban = () => {
           paddingTop: 12,
           paddingBottom: 8,
           gap: 8,
+          zIndex: 1000,
+          elevation: 1000,
+          backgroundColor: "#FFEEE7",
         }}
+        collapsable={false}
       >
         <Text style={{ color: "#4a2f14", fontWeight: "700" }}>Modo de interação</Text>
         <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
-          {isGestureMode && isWeb ? (
-            <Pressable
+          {isGestureMode ? (
+            <TouchableOpacity
+              activeOpacity={0.7}
               onPress={() => setGestureSettingsOpen(true)}
+              hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
               style={{
-                paddingVertical: 6,
-                paddingHorizontal: 10,
+                minWidth: 48,
+                minHeight: 48,
+                alignItems: "center",
+                justifyContent: "center",
+                paddingVertical: 8,
+                paddingHorizontal: 12,
                 borderRadius: 999,
                 borderWidth: 1,
                 borderColor: "#A47032",
                 backgroundColor: "#fff",
               }}
               accessibilityLabel="Configurações de gestos"
+              accessibilityRole="button"
             >
-              <Text style={{ color: "#4a2f14", fontWeight: "600", fontSize: 13 }}>⚙</Text>
-            </Pressable>
+              <Text style={{ color: "#4a2f14", fontWeight: "600", fontSize: 20 }}>⚙</Text>
+            </TouchableOpacity>
           ) : null}
           <Pressable
             onPress={() => setInteractionMode(INTERACTION_MODES.TOUCH)}
@@ -1259,6 +2232,8 @@ const OrderKanban = () => {
           </Pressable>
           <Pressable
             onPress={() => setInteractionMode(INTERACTION_MODES.GESTURE)}
+            onLongPress={() => setGestureSettingsOpen(true)}
+            delayLongPress={450}
             style={{
               paddingVertical: 6,
               paddingHorizontal: 12,
@@ -1284,17 +2259,30 @@ const OrderKanban = () => {
           </Text>
           <Text style={{ color: "#4a2f14", fontSize: 12, fontWeight: "600" }}>
             {gesture.error
-              ? `Câmera indisponível: ${gesture.error}`
-              : gesture.tracking
-                ? detailsOrderId != null
-                  ? "Modal aberto — pinça e arraste para rolar o conteúdo."
-                  : gestureSettingsApi.settings.openDetailsWithGesture
-                    ? "Aponte no card + pinça = arrastar na hora. Entre cards = pinça vertical. Borda = scroll."
-                    : "Aponte no card + pinça = arrastar. Entre cards = pinça vertical na lista. Detalhes por toque."
-                : "Inicializando tracking por câmera... (fallback toque ativo)"}
+              ? gesture.error
+              : gesture.showPermissionPrompt
+                ? "Toque em Permitir câmera para ativar o rastreamento de gestos."
+                : gesture.tracking
+                  ? detailsOrderId != null
+                    ? "Modal aberto — pinça e arraste para rolar o conteúdo."
+                    : gestureSettingsApi.settings.openDetailsWithGesture
+                      ? "Aponte no card + pinça firme = arrastar. Entre cards = pinça vertical. Borda = scroll."
+                      : "Pinça no card = arrastar. Solte a pinça na coluna desejada. Mão na borda da tela = scroll."
+                  : gesture.permissionLoading
+                    ? "Solicitando permissão da câmera…"
+                    : "Preparando câmera e tracking… (toque continua funcionando). Segure Gestos p/ ajustes."}
           </Text>
         </View>
       )}
+      <GestureCameraPermissionModal
+        visible={Boolean(isGestureMode && !isWeb && gesture.showPermissionPrompt)}
+        loading={Boolean(gesture.permissionLoading)}
+        onAllow={gesture.requestCameraPermission}
+        onDeny={() => {
+          gesture.dismissPermissionPrompt?.();
+          setInteractionMode(INTERACTION_MODES.TOUCH);
+        }}
+      />
       <ScrollView
         ref={scrollRef}
         horizontal
@@ -1305,7 +2293,9 @@ const OrderKanban = () => {
             ? { overflowX: isDraggingCard ? "hidden" : "auto", touchAction: "pan-x" }
             : {}),
         }}
-        scrollEnabled={isGestureMode || !isDraggingCard}
+        scrollEnabled={
+          isWeb ? isGestureMode || !isDraggingCard : !isGestureMode && !isDraggingCard
+        }
         nestedScrollEnabled={false}
         onLayout={handleBoardViewportLayout}
         onScroll={handleBoardViewportScroll}
@@ -1328,6 +2318,7 @@ const OrderKanban = () => {
           {COLUMNS.map((column, index) => (
             <View
               key={column.key}
+              ref={(node) => registerColumnRef(column.key, node)}
               dataSet={{ columnKey: column.key }}
               onLayout={(event) => {
                 const { x, width } = event.nativeEvent.layout;
@@ -1351,7 +2342,11 @@ const OrderKanban = () => {
               <KanbanColumn
                 title={column.title}
                 scrollEnabled={!isDraggingCard}
-                enableGestureScrollTarget={isGestureMode && isWeb}
+                columnKey={column.key}
+                enableGestureScrollTarget={isGestureMode}
+                onColumnScrollRef={registerColumnScrollRef}
+                onColumnScrollAreaLayout={registerColumnScrollArea}
+                onColumnScrollOffset={handleColumnScrollOffset}
               >
                 {groupedOrders[column.key]?.map((order) => (
                   <DraggableOrderCard
@@ -1359,7 +2354,7 @@ const OrderKanban = () => {
                     order={order}
                     columnIndex={index}
                     columnsLength={COLUMNS.length}
-                    dragEnabled={dragEnabled}
+                    dragEnabled={dragEnabled && canPickOrderForKanban(order.status)}
                     onDrop={handleDrop}
                     onDragStateChange={handleDragStateChange}
                     onDragMove={handleDragMove}
@@ -1369,7 +2364,11 @@ const OrderKanban = () => {
                     onDragPreviewMove={handleDragPreviewMove}
                     onDragPreviewEnd={handleDragPreviewEnd}
                     isGestureMode={isGestureMode}
+                    gestureDragActiveId={gestureDraggedOrderId}
                     onOpenDetails={() => setDetailsOrderId(order.id)}
+                    onGestureCardLayout={registerGestureCardBounds}
+                    onGestureDetailsLayout={registerGestureDetailsBounds}
+                    onGestureCardRef={registerGestureCardRef}
                   />
                 ))}
               </KanbanColumn>
@@ -1377,7 +2376,30 @@ const OrderKanban = () => {
           ))}
         </View>
       </ScrollView>
-      {dragPreview && (
+      {dragPreview && isGestureMode && gestureDraggedOrderId != null && !isWeb ? (
+        <Modal
+          visible
+          transparent
+          animationType="none"
+          statusBarTranslucent
+          onRequestClose={() => {}}
+        >
+          <View pointerEvents="none" style={{ flex: 1 }}>
+            <View
+              ref={dragPreviewLayerRef}
+              pointerEvents="none"
+              style={{ position: "absolute", left: 0, top: 0 }}
+            >
+              <OrderCard
+                order={dragPreview.order}
+                deliveryDate={dragPreview.order.dataPrevisaoEntrega}
+                orderId={dragPreview.order.id}
+              />
+            </View>
+          </View>
+        </Modal>
+      ) : null}
+      {dragPreview && (isWeb || !isGestureMode) ? (
         <View
           ref={dragPreviewLayerRef}
           pointerEvents="none"
@@ -1403,7 +2425,7 @@ const OrderKanban = () => {
             orderId={dragPreview.order.id}
           />
         </View>
-      )}
+      ) : null}
       <GestureSettingsPanel
         visible={gestureSettingsOpen}
         onClose={() => setGestureSettingsOpen(false)}
@@ -1424,6 +2446,7 @@ const OrderKanban = () => {
             order={selectedOrderRaw}
             enableGestureCloseTargets
             onGestureScrollReady={handleModalGestureScrollReady}
+            onGestureAreasLayout={handleModalGestureAreasLayout}
           />
         </Modal>
       ) : null}
@@ -1449,6 +2472,7 @@ const OrderKanban = () => {
           )
         : null}
     </View>
+    </>
   );
 };
 
@@ -1472,11 +2496,19 @@ DraggableOrderCard.propTypes = {
   onDragPreviewMove: PropTypes.func.isRequired,
   onDragPreviewEnd: PropTypes.func.isRequired,
   isGestureMode: PropTypes.bool,
+  gestureDragActiveId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   onOpenDetails: PropTypes.func,
+  onGestureCardLayout: PropTypes.func,
+  onGestureDetailsLayout: PropTypes.func,
+  onGestureCardRef: PropTypes.func,
 };
 
 DraggableOrderCard.defaultProps = {
   isGestureMode: false,
+  gestureDragActiveId: null,
   onOpenDetails: undefined,
+  onGestureCardLayout: undefined,
+  onGestureDetailsLayout: undefined,
+  onGestureCardRef: undefined,
 };
 
