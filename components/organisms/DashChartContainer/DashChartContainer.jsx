@@ -24,18 +24,22 @@ const DashChartContainer = ({
                 <Text style={styles.headerText}>{headerText}</Text>
 
                 <View style={styles.filters}>
-                    <Select
-                        options={itemOptions}
-                        defaultValue={defaultItemValue}
-                        selectedValue={selectedTipoItem}
-                        setSelectedValue={setSelectedTipoItem}
-                    />
-                    <Select
-                        options={anosOptions}
-                        defaultValue={selectedAno}
-                        selectedValue={selectedAno}
-                        setSelectedValue={setSelectedAno}
-                    />
+                    <View style={styles.filterItem}>
+                        <Select
+                            options={itemOptions}
+                            defaultValue={defaultItemValue}
+                            selectedValue={selectedTipoItem}
+                            setSelectedValue={setSelectedTipoItem}
+                        />
+                    </View>
+                    <View style={styles.filterItem}>
+                        <Select
+                            options={anosOptions}
+                            defaultValue={selectedAno}
+                            selectedValue={selectedAno}
+                            setSelectedValue={setSelectedAno}
+                        />
+                    </View>
                 </View>
             </View>
             {children}

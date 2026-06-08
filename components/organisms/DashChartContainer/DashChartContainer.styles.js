@@ -17,10 +17,10 @@ const styles = StyleSheet.create({
   },
   containerHeader: {
     backgroundColor: "#103464",
-    height: 150,
     padding: 15,
     display: "flex",
     justifyContent: "space-between",
+    gap: 12,
   },
   headerText: {
     fontSize: 20,
@@ -38,7 +38,10 @@ const styles = StyleSheet.create({
     width: "100%",
     display: "flex",
     flexDirection: "row",
-    justifyContent: "space-between",
+    gap: 10,
+  },
+  filterItem: {
+    flex: 1,
   },
 });
 
