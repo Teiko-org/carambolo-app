@@ -24,6 +24,7 @@ const NAV_ITEMS = [
     { text: "Pedidos", route: "/OrderKanban", selectedKey: "Pedidos" },
     { text: "Produtos", route: "/Products", selectedKey: "Produtos" },
     { text: "Dashboard", route: "/Dashboard", selectedKey: "Dashboard" },
+    { text: "Mapa de Entregas", route: "/DeliveriesMap", selectedKey: "Mapa de Entregas" },
    {
     text: "Importar histórico de pedidos",
     route: "/ImportarDados",
