@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { KeyboardAvoidingView, Platform, StyleSheet } from "react-native";
 import { useRouter, useNavigation } from "expo-router";
-import * as Speech from "expo-speech";
 import AssistantHeader from "../components/molecules/AssistantHeader/AssistantHeader";
 import InsightsPanel from "../components/organisms/InsightsPanel/InsightsPanel";
 import ChatMessages from "../components/organisms/ChatMessages/ChatMessages";
@@ -61,13 +60,6 @@ export default function Assistant() {
   } = useVoiceRecording();
 
   const isBusy = askMutation.isPending || askAudioMutation.isPending;
-
-  const speakPreview = useCallback((text) => {
-    const trimmed = (text || "").trim();
-    if (!trimmed) return;
-    Speech.stop();
-    Speech.speak(trimmed, { language: "pt-BR" });
-  }, []);
 
   useEffect(() => {
     (async () => {
@@ -145,12 +137,8 @@ export default function Assistant() {
         persistMessages(withBot, newSid);
         return withBot;
       });
-
-      if (data.pending_confirmation?.message) {
-        speakPreview(data.pending_confirmation.message);
-      }
     },
-    [sessionId, persistMessages, speakPreview]
+    [sessionId, persistMessages]
   );
 
   const sendMessage = useCallback(
@@ -289,7 +277,6 @@ export default function Assistant() {
   useEffect(() => {
     return () => {
       discardVoice();
-      Speech.stop();
     };
   }, [discardVoice]);
 
