@@ -18,6 +18,11 @@ export default defineConfig([
   },
   pluginReact.configs.flat.recommended,
   {
+    settings: {
+      react: {
+        version: "19.1.0",
+      },
+    },
     rules: {
       "react/react-in-jsx-scope": "off",
       "react/jsx-uses-react": "off",

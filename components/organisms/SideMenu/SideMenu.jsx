@@ -25,10 +25,12 @@ const getNavItems = (t) => [
     { text: t("sideMenu.nav.orders"), route: "/OrderKanban", selectedKey: "Pedidos" },
     { text: t("sideMenu.nav.products"), route: "/Products", selectedKey: "Produtos" },
     { text: t("sideMenu.nav.dashboard"), route: "/Dashboard", selectedKey: "Dashboard" },
+    { text: "Mapa de Entregas", route: "/DeliveriesMap", selectedKey: "Mapa de Entregas" },
     {
         text: t("sideMenu.nav.importHistory"),
         route: "/ImportarDados",
-        selectedKey: "Importar histórico de pedidos",
+        selectedKey: "Importar hist�rico de pedidos",
+        compact: true,
     },
 ];
 

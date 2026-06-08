@@ -14,6 +14,8 @@
     },
     "ios": {
       "supportsTablet": true,
+      "config": {
+        "googleMapsApiKey": "AIzaSyAgpEY34pngEi022on5ARvYgauAf1UsPOk"
       "infoPlist": {
         "NSCameraUsageDescription": "A câmera frontal é usada para controlar o Kanban com gestos das mãos."
       }
@@ -27,6 +29,11 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAgpEY34pngEi022on5ARvYgauAf1UsPOk"
+        }
       }
     },
     "web": {
