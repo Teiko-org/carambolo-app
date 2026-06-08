@@ -5,7 +5,7 @@ import DashChartContainer from "../components/organisms/DashChartContainer/DashC
 import DashOrderContainer from "../components/organisms/DashOrderContainer/DashOrderContainer"
 import { ClipboardList } from "lucide-react-native";
 import DashMostOrderedContainer from "../components/organisms/DashMostOrderedContainer/DashMostOrderedContainer";
-import DashTopCustomersContainer from "../components/organisms/DashTopCustomersContainer/DashTopCustomersContainer";
+/* import DashTopCustomersContainer from "../components/organisms/DashTopCustomersContainer/DashTopCustomersContainer"; */
 import DashLastOrdersContainer from "../components/organisms/DashLastOrdersContainer/DashLastOrdersContainer";
 import {
     useLastOrders,
@@ -211,6 +211,7 @@ const Dashboard = () => {
                     title='Produtos mais pedidos'
                     subtitle='Todos os protudos mais pedidos dos seus clientes'
                 />
+                {/* 
                 <DashTopCustomersContainer
                     title='Principais Clientes'
                     subtitle='Clientes com mais pedidos'
@@ -247,6 +248,7 @@ const Dashboard = () => {
                         }
                     ]}
                 />
+                */}
                 <DashLastOrdersContainer
                     title={'Últimos Pedidos'}
                     subtitle={'Pedidos mais recentes'}

@@ -1,4 +1,4 @@
-import api from "./api/api"
+import api, { getApiBaseUrl } from "./api/api"
 
 export const getProducts = async ({ categorias = [], page = 0, size = 100 } = {}) => {
   try {
@@ -67,16 +67,24 @@ export const createFornada = async ({ produto, descricao, valor, categoria, phot
     formData.append("valor", valor)
     formData.append("categoria", categoria)
     if (photo) {
+      const mimeType = photo.mimeType || "image/jpeg"
+      const ext = mimeType.split("/")[1] || "jpg"
       formData.append("imagens", {
         uri: photo.uri,
-        type: photo.type || "image/jpeg",
-        name: photo.fileName || `fornada-${Date.now()}.jpg`,
+        type: mimeType,
+        name: photo.fileName || `fornada-${Date.now()}.${ext}`,
       })
     }
-    const { data } = await api.post("/fornadas/produto-fornada", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
+    const baseUrl = getApiBaseUrl()
+    const response = await fetch(`${baseUrl}/fornadas/produto-fornada`, {
+      method: "POST",
+      body: formData,
     })
-    return data
+    if (!response.ok) {
+      const text = await response.text()
+      throw new Error(`${response.status}: ${text}`)
+    }
+    return await response.json()
   } catch (e) {
     console.log("error creating fornada: ", e)
     throw e
@@ -113,16 +121,24 @@ export const createDecoracao = async ({ nome, categoria, observacao, adicionais,
       formData.append("adicionais", adicionais.map((a) => a.id).join(","))
     }
     if (photo) {
+      const mimeType = photo.mimeType || "image/jpeg"
+      const ext = mimeType.split("/")[1] || "jpg"
       formData.append("imagens", {
         uri: photo.uri,
-        type: photo.type || "image/jpeg",
-        name: photo.fileName || `decoracao-${Date.now()}.jpg`,
+        type: mimeType,
+        name: photo.fileName || `decoracao-${Date.now()}.${ext}`,
       })
     }
-    const { data } = await api.post("/decoracoes", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
+    const baseUrl = getApiBaseUrl()
+    const response = await fetch(`${baseUrl}/decoracoes`, {
+      method: "POST",
+      body: formData,
     })
-    return data
+    if (!response.ok) {
+      const text = await response.text()
+      throw new Error(`${response.status}: ${text}`)
+    }
+    return await response.json()
   } catch (e) {
     console.log("error creating decoracao: ", e)
     throw e

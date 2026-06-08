@@ -7,7 +7,7 @@ import { styles } from "./PromptBar.styles";
 
 const FADE_END_THRESHOLD = 4;
 
-const PromptBar = ({ prompts, onSelect, bgColor }) => {
+const PromptBar = ({ prompts, onSelect, bgColor = "#FFEEE7" }) => {
   const [showRightFade, setShowRightFade] = useState(true);
   const [showLeftFade, setShowLeftFade] = useState(false);
 
