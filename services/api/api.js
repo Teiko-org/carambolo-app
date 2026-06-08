@@ -3,21 +3,19 @@ import { Platform } from "react-native";
 import Constants from "expo-constants";
 
 const getExpoHost = () => {
+
   const hostUri =
+    Constants?.expoGoConfig?.debuggerHost ||
     Constants?.expoConfig?.hostUri ||
-    Constants?.manifest2?.extra?.expoClient?.hostUri;
+    Constants?.manifest2?.extra?.expoClient?.hostUri
 
-  if (!hostUri) {
-    return null;
-  }
+  if (!hostUri) return null
 
-  const host = hostUri.split(":")[0];
+  const host = hostUri.split(":")[0]
 
-  if (!host || host.includes("exp.direct")) {
-    return null;
-  }
+  if (!host || host.includes("exp.direct")) return null
 
-  return host;
+  return host
 };
 
 const getApiBaseUrl = () => {
